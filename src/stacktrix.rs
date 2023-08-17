@@ -1,5 +1,7 @@
-use crate::{Column, ColumnMut, ColumnPrio, Position, Row, RowMut, RowPrio};
-use std::{fmt::Debug, marker::PhantomData};
+use crate::{
+    Column, ColumnMut, ColumnPrio, ColumnPrioMatrix, Position, Row, RowMut, RowPrio, RowPrioMatrix,
+};
+use std::{fmt::Debug, marker::PhantomData, mem::MaybeUninit};
 
 /// Stacktrix allows a stack based array to be used as a Matrix.
 ///
@@ -12,10 +14,10 @@ pub struct Stacktrix<const S: usize, const R: usize, const C: usize, MemoryPrio,
     _prio: PhantomData<MemoryPrio>,
 }
 
-impl<'a, const S: usize, const R: usize, const C: usize, T> Stacktrix<S, R, C, ColumnPrio, T>
+impl<'a, const S: usize, const R: usize, const C: usize, MemoryPriority, T>
+    Stacktrix<S, R, C, MemoryPriority, T>
 where
-    Self: 'a,
-    T: Copy + Default + Debug,
+    T: Copy + Sized,
 {
     /// Constructs a Stacktrix from a slice with a [`ColumnPrio`] memory interpretation.
     ///
@@ -34,14 +36,28 @@ where
     pub fn from_values(inner_values: &[T]) -> Self {
         assert!(inner_values.len() == R * C);
         assert!(S == R * C);
-        let mut inner = [T::default(); S];
-        inner.copy_from_slice(inner_values);
+        let mut inner: [MaybeUninit<T>; S] = unsafe { [MaybeUninit::uninit().assume_init(); S] };
+        // Safety:
+        // inner and inner_values are valid pointers and do not overlap.
+        unsafe {
+            std::ptr::copy_nonoverlapping(inner_values.as_ptr(), inner.as_mut_ptr().cast::<T>(), S)
+        };
+        // Safety:
+        // T and MaybeUninit<T> have the same size.
+        // All elements in inner have been initialized.
         Self {
-            inner,
+            inner: unsafe { (&inner as *const _ as *const [T; S]).read() },
             _prio: PhantomData,
         }
     }
+}
 
+impl<'a, const S: usize, const R: usize, const C: usize, T> ColumnPrioMatrix<'a, R, C, T>
+    for Stacktrix<S, R, C, ColumnPrio, T>
+where
+    Self: 'a,
+    T: Copy + Default + Debug,
+{
     /// Inserts a value at position (x, y) inside the matrix.
     ///
     /// # Panics
@@ -51,16 +67,15 @@ where
     /// # Examples
     ///
     /// ```
-    /// # use mightrix::{ Stacktrix, ColumnPrio };
+    /// # use mightrix::{ Stacktrix, ColumnPrio, ColumnPrioMatrix };
     /// let mut data = vec![1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4];
     /// let mut m = Stacktrix::<16, 4, 4, ColumnPrio, u8>::from_values(&mut data[..]);
     /// m.insert((3, 0), 0);
     /// assert_eq!(m.get((3,0)), &0);
     /// ```
-    pub fn insert(&'a mut self, location: Position, value: T) {
+    fn insert(&mut self, location: Position, value: T) {
         self.get_mut_collumn(location.1)[location.0] = value;
     }
-
     /// Get a immutable reference to a value in the matrix at location (x, y)
     ///
     /// # Panics
@@ -70,12 +85,12 @@ where
     /// # Examples
     ///
     /// ```
-    /// # use mightrix::{ Stacktrix, ColumnPrio };
+    /// # use mightrix::{ Stacktrix, ColumnPrio, ColumnPrioMatrix };
     /// let mut data = vec![1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4];
     /// let mut m = Stacktrix::<16, 4, 4, ColumnPrio, u8>::from_values(&mut data[..]);
     /// assert_eq!(m.get((0, 2)), &3);
     /// ```
-    pub fn get(&'a self, location: Position) -> &'a T {
+    fn get(&'a self, location: Position) -> &'a T {
         &self.get_collumn(location.1)[location.0]
     }
 
@@ -84,7 +99,7 @@ where
     /// # Panics
     ///
     /// If the location given is out of bounds in x or y the function panics.
-    pub fn get_mut(&'a mut self, location: Position) -> &'a mut T {
+    fn get_mut(&'a mut self, location: Position) -> &'a mut T {
         &mut self.get_mut_collumn(location.1)[location.0]
     }
 
@@ -99,13 +114,13 @@ where
     /// # Examples
     ///
     /// ```
-    /// # use mightrix::{ Stacktrix, ColumnPrio };
+    /// # use mightrix::{ Stacktrix, ColumnPrio, ColumnPrioMatrix };
     /// let mut data = vec![1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4];
     /// let mut m = Stacktrix::<16, 4, 4, ColumnPrio, u8>::from_values(&mut data[..]);
     /// m.fill_col(1, &[7,7,7,7]);
     /// assert_eq!(m.get_collumn(1), &[7,7,7,7]);
     /// ```
-    pub fn fill_col(&mut self, col: usize, data: &[T]) {
+    fn fill_col(&mut self, col: usize, data: &[T]) {
         assert_eq!(data.len(), C);
         let start = col * C;
         self.inner[start..start + C].copy_from_slice(data);
@@ -122,7 +137,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// # use mightrix::{ Stacktrix, ColumnPrio };
+    /// # use mightrix::{ Stacktrix, ColumnPrio, ColumnPrioMatrix };
     /// let mut data = vec![1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4];
     /// let mut m = Stacktrix::<16, 4, 4, ColumnPrio, u8>::from_values(&mut data[..]);
     /// m.fill_row(1, &[7,7,7,7]);
@@ -131,7 +146,7 @@ where
     /// assert_eq!(m.get((1,2)), &7);
     /// assert_eq!(m.get((1,3)), &7);
     /// ```
-    pub fn fill_row(&mut self, row: usize, data: &[T]) {
+    fn fill_row(&mut self, row: usize, data: &[T]) {
         assert_eq!(data.len(), R);
         for (dst, src) in self.get_mut_row(row).into_iter().zip(data.iter()) {
             *dst = *src;
@@ -147,12 +162,12 @@ where
     /// # Examples
     ///
     /// ```
-    /// # use mightrix::{ Stacktrix, ColumnPrio };
+    /// # use mightrix::{ Stacktrix, ColumnPrio, ColumnPrioMatrix };
     /// let mut data = vec![1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4];
     /// let mut m = Stacktrix::<16, 4, 4, ColumnPrio, u8>::from_values(&mut data[..]);
     /// assert_eq!(m.get_collumn(0), &[1,1,1,1]);
     /// ```
-    pub fn get_collumn(&self, col: usize) -> &[T] {
+    fn get_collumn(&self, col: usize) -> &[T] {
         assert!(
             col < C,
             "Column: {} out of bounds {}, be carefull collumns are 0 indexed.",
@@ -168,7 +183,7 @@ where
     /// # Panics
     ///
     /// If the collumn is out of bounds.
-    pub fn get_mut_collumn(&mut self, col: usize) -> &mut [T] {
+    fn get_mut_collumn(&mut self, col: usize) -> &mut [T] {
         assert!(
             col < C,
             "Column: {} out of bounds {}, be carefull collumns are 0 indexed.",
@@ -184,7 +199,7 @@ where
     /// # Panics
     ///
     /// If the row is out of bounds.
-    pub fn get_row(&self, row: usize) -> Row<'_, R, C, T> {
+    fn get_row(&self, row: usize) -> Row<'_, R, C, T> {
         assert!(
             row < R,
             "Row: {} out of bounds {}, be carefull rows are 0 indexed.",
@@ -201,7 +216,7 @@ where
     /// # Panics
     ///
     /// If the row is out of bounds.
-    pub fn get_mut_row(&mut self, row: usize) -> RowMut<'_, R, C, T> {
+    fn get_mut_row(&mut self, row: usize) -> RowMut<'_, R, C, T> {
         assert!(
             row < R,
             "Row: {} out of bounds {}, be carefull rows are 0 indexed.",
@@ -218,7 +233,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// # use mightrix::{ Stacktrix, ColumnPrio };
+    /// # use mightrix::{ Stacktrix, ColumnPrio, ColumnPrioMatrix };
     /// let mut data = vec![1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4];
     /// let mut m = Stacktrix::<16, 4, 4, ColumnPrio, u8>::from_values(&mut data[..]);
     /// m.apply_all(|el| *el *= 2);
@@ -227,14 +242,14 @@ where
     /// assert_eq!(m.get_collumn(2), &[6,6,6,6]);
     /// assert_eq!(m.get_collumn(3), &[8,8,8,8]);
     /// ```
-    pub fn apply_all(&mut self, f: fn(&mut T)) {
+    fn apply_all(&mut self, f: fn(&mut T)) {
         for el in self.inner.iter_mut() {
             f(el);
         }
     }
 
     /// Prints out the matrix, this is only usefull for numeric types.
-    pub fn pretty_print(&self) {
+    fn pretty_print(&self) {
         let strings: Vec<Vec<String>> = (0..4)
             .map(|i| {
                 self.get_row(i)
@@ -255,36 +270,12 @@ where
     }
 }
 
-impl<'a, const S: usize, const R: usize, const C: usize, T> Stacktrix<S, R, C, RowPrio, T>
+impl<'a, const S: usize, const R: usize, const C: usize, T> RowPrioMatrix<'a, R, C, T>
+    for Stacktrix<S, R, C, RowPrio, T>
 where
     Self: 'a,
     T: Copy + Default + Debug,
 {
-    /// Constructs a Stacktrix from a slice with a [`RowPrio`] memory interpretation.
-    ///
-    /// # Panics
-    ///
-    /// The function will panic if the given slice is not equal to the size of the to be created
-    /// matrix R * C or if S != R * C.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # use mightrix::{ Stacktrix, RowPrio };
-    /// let mut data = vec![1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4];
-    /// let reftrix = Stacktrix::<16, 4, 4, RowPrio, u8>::from_values(&mut data[..]);
-    /// ```
-    pub fn from_values(inner_values: &[T]) -> Self {
-        assert!(inner_values.len() == R * C);
-        assert!(S == R * C);
-        let mut inner = [T::default(); S];
-        inner.copy_from_slice(inner_values);
-        Self {
-            inner,
-            _prio: PhantomData,
-        }
-    }
-
     /// Inserts a value at position (x, y) inside the matrix.
     ///
     /// # Panics
@@ -294,13 +285,13 @@ where
     /// # Examples
     ///
     /// ```
-    /// # use mightrix::{ Stacktrix, RowPrio};
+    /// # use mightrix::{ Stacktrix, RowPrio, RowPrioMatrix};
     /// let mut data = vec![1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4];
     /// let mut m = Stacktrix::<16, 4, 4, RowPrio, u8>::from_values(&mut data[..]);
     /// m.insert((3, 1), 0);
     /// assert_eq!(m.get((3,1)), &0);
     /// ```
-    pub fn insert(&'a mut self, location: Position, value: T) {
+    fn insert(&mut self, location: Position, value: T) {
         self.get_mut_row(location.0)[location.1] = value;
     }
 
@@ -313,12 +304,12 @@ where
     /// # Examples
     ///
     /// ```
-    /// # use mightrix::{ Stacktrix, RowPrio};
+    /// # use mightrix::{ Stacktrix, RowPrio, RowPrioMatrix};
     /// let mut data = vec![1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4];
     /// let mut m = Stacktrix::<16, 4, 4, RowPrio, u8>::from_values(&mut data[..]);
     /// assert_eq!(m.get((0, 2)), &1);
     /// ```
-    pub fn get(&'a self, location: Position) -> &'a T {
+    fn get(&self, location: Position) -> &T {
         &self.get_row(location.0)[location.1]
     }
 
@@ -327,7 +318,7 @@ where
     /// # Panics
     ///
     /// If the location given is out of bounds in x or y the function panics.
-    pub fn get_mut(&'a mut self, location: Position) -> &'a mut T {
+    fn get_mut(&mut self, location: Position) -> &mut T {
         &mut self.get_mut_row(location.0)[location.1]
     }
 
@@ -342,7 +333,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// # use mightrix::{ Stacktrix, RowPrio};
+    /// # use mightrix::{ Stacktrix, RowPrio, RowPrioMatrix};
     /// let mut data = vec![1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4];
     /// let mut m = Stacktrix::<16, 4, 4, RowPrio, u8>::from_values(&mut data[..]);
     /// m.fill_col(1, &[7,7,7,7]);
@@ -351,7 +342,7 @@ where
     /// assert_eq!(m.get((2,1)), &7);
     /// assert_eq!(m.get((3,1)), &7);
     /// ```
-    pub fn fill_col(&'a mut self, col: usize, data: &[T]) {
+    fn fill_col(&'a mut self, col: usize, data: &[T]) {
         assert_eq!(data.len(), R);
         for (dst, src) in self.get_mut_column(col).into_iter().zip(data.iter()) {
             *dst = *src;
@@ -369,13 +360,13 @@ where
     /// # Examples
     ///
     /// ```
-    /// # use mightrix::{ Stacktrix, RowPrio };
+    /// # use mightrix::{ Stacktrix, RowPrio, RowPrioMatrix };
     /// let mut data = vec![1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4];
     /// let mut m = Stacktrix::<16, 4, 4, RowPrio, u8>::from_values(&mut data[..]);
     /// m.fill_row(1, &[7,7,7,7]);
     /// assert_eq!(m.get_row(1), &[7,7,7,7]);
     /// ```
-    pub fn fill_row(&mut self, row: usize, data: &[T]) {
+    fn fill_row(&mut self, row: usize, data: &[T]) {
         assert_eq!(data.len(), C);
         let start = row * C;
         self.inner[start..start + C].copy_from_slice(data);
@@ -386,7 +377,7 @@ where
     /// # Panics
     ///
     /// If the col is out of bounds.
-    pub fn get_column(&'a self, col: usize) -> Column<'a, R, C, T> {
+    fn get_column(&self, col: usize) -> Column<'_, R, C, T> {
         assert!(
             col < C,
             "Column: {} out of bounds {}, be carefull collumns are 0 indexed.",
@@ -403,7 +394,7 @@ where
     /// # Panics
     ///
     /// If the col is out of bounds.
-    pub fn get_mut_column(&'a mut self, col: usize) -> ColumnMut<'a, R, C, T> {
+    fn get_mut_column(&mut self, col: usize) -> ColumnMut<'_, R, C, T> {
         assert!(
             col < C,
             "Column: {} out of bounds {}, be carefull collumns are 0 indexed.",
@@ -424,12 +415,12 @@ where
     /// # Examples
     ///
     /// ```
-    /// # use mightrix::{ Stacktrix, RowPrio};
+    /// # use mightrix::{ Stacktrix, RowPrio, RowPrioMatrix};
     /// let mut data = vec![1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4];
     /// let mut m = Stacktrix::<16, 4, 4, RowPrio, u8>::from_values(&mut data[..]);
     /// assert_eq!(m.get_row(0), &[1,1,1,1]);
     /// ```
-    pub fn get_row(&self, row: usize) -> &[T] {
+    fn get_row(&self, row: usize) -> &[T] {
         assert!(
             row < R,
             "Row: {} out of bounds {}, be carefull rows are 0 indexed.",
@@ -445,7 +436,7 @@ where
     /// # Panics
     ///
     /// If the row is out of bounds.
-    pub fn get_mut_row(&mut self, row: usize) -> &mut [T] {
+    fn get_mut_row(&mut self, row: usize) -> &mut [T] {
         assert!(
             row < R,
             "Row: {} out of bounds {}, be carefull rows are 0 indexed.",
@@ -461,7 +452,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// # use mightrix::{ Stacktrix, RowPrio };
+    /// # use mightrix::{ Stacktrix, RowPrio, RowPrioMatrix };
     /// let mut data = vec![1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4];
     /// let mut m = Stacktrix::<16, 4, 4, RowPrio, u8>::from_values(&mut data[..]);
     /// m.apply_all(|el| *el *= 2);
@@ -470,14 +461,14 @@ where
     /// assert_eq!(m.get_row(2), &[6,6,6,6]);
     /// assert_eq!(m.get_row(3), &[8,8,8,8]);
     /// ```
-    pub fn apply_all(&mut self, f: fn(&mut T)) {
+    fn apply_all(&mut self, f: fn(&mut T)) {
         for el in self.inner.iter_mut() {
             f(el);
         }
     }
 
     /// Prints out the matrix, this is only usefull for numeric types.
-    pub fn pretty_print(&self) {
+    fn pretty_print(&self) {
         let strings: Vec<String> = self.inner.iter().map(|el| format!("{:02x?}", el)).collect();
         let _collumn_width = strings.iter().map(|el| el.len()).max();
         let mut index = 0;

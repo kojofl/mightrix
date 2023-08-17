@@ -1,4 +1,4 @@
-use mightrix::{Reftrix, RowPrio, Stacktrix};
+use mightrix::{Reftrix, RowPrio, Stacktrix, RowPrioMatrix};
 
 // A Row first Matrix
 // 01-01-01-01
