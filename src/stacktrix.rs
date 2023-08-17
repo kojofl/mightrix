@@ -6,7 +6,7 @@ use std::{fmt::Debug, marker::PhantomData};
 /// A Stacktrix matrix operates on a a stack based array. The number of rows is indicated by R the number
 /// of collumns by C, S indicates the entire size this is necessary since const expressions are
 /// still nightly only. MemoryPriority indicates how the underlying memory is interpreted. (see
-/// [`CollumPrio`], [`RowPrio`])
+/// [`ColumnPrio`], [`RowPrio`])
 pub struct Stacktrix<const S: usize, const R: usize, const C: usize, MemoryPrio, T> {
     inner: [T; S],
     _prio: PhantomData<MemoryPrio>,
@@ -17,7 +17,7 @@ where
     Self: 'a,
     T: Copy + Default + Debug,
 {
-    /// Constructs a Stacktrix from a slice with a [`CollumPrio`] memory interpretation.
+    /// Constructs a Stacktrix from a slice with a [`ColumnPrio`] memory interpretation.
     ///
     /// # Panics
     ///
@@ -27,9 +27,9 @@ where
     /// # Examples
     ///
     /// ```
-    /// # use mightrix::{ Stacktrix, CollumPrio };
+    /// # use mightrix::{ Stacktrix, ColumnPrio };
     /// let mut data = vec![1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4];
-    /// let reftrix = Stacktrix::<16, 4, 4, CollumPrio, u8>::from_values(&data[..]);
+    /// let reftrix = Stacktrix::<16, 4, 4, ColumnPrio, u8>::from_values(&data[..]);
     /// ```
     pub fn from_values(inner_values: &[T]) -> Self {
         assert!(inner_values.len() == R * C);
@@ -51,9 +51,9 @@ where
     /// # Examples
     ///
     /// ```
-    /// # use mightrix::{ Stacktrix, CollumPrio };
+    /// # use mightrix::{ Stacktrix, ColumnPrio };
     /// let mut data = vec![1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4];
-    /// let mut m = Stacktrix::<16, 4, 4, CollumPrio, u8>::from_values(&mut data[..]);
+    /// let mut m = Stacktrix::<16, 4, 4, ColumnPrio, u8>::from_values(&mut data[..]);
     /// m.insert((3, 0), 0);
     /// assert_eq!(m.get((3,0)), &0);
     /// ```
@@ -70,9 +70,9 @@ where
     /// # Examples
     ///
     /// ```
-    /// # use mightrix::{ Stacktrix, CollumPrio };
+    /// # use mightrix::{ Stacktrix, ColumnPrio };
     /// let mut data = vec![1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4];
-    /// let mut m = Stacktrix::<16, 4, 4, CollumPrio, u8>::from_values(&mut data[..]);
+    /// let mut m = Stacktrix::<16, 4, 4, ColumnPrio, u8>::from_values(&mut data[..]);
     /// assert_eq!(m.get((0, 2)), &3);
     /// ```
     pub fn get(&'a self, location: Position) -> &'a T {
@@ -99,9 +99,9 @@ where
     /// # Examples
     ///
     /// ```
-    /// # use mightrix::{ Stacktrix, CollumPrio };
+    /// # use mightrix::{ Stacktrix, ColumnPrio };
     /// let mut data = vec![1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4];
-    /// let mut m = Stacktrix::<16, 4, 4, CollumPrio, u8>::from_values(&mut data[..]);
+    /// let mut m = Stacktrix::<16, 4, 4, ColumnPrio, u8>::from_values(&mut data[..]);
     /// m.fill_col(1, &[7,7,7,7]);
     /// assert_eq!(m.get_collumn(1), &[7,7,7,7]);
     /// ```
@@ -122,9 +122,9 @@ where
     /// # Examples
     ///
     /// ```
-    /// # use mightrix::{ Stacktrix, CollumPrio };
+    /// # use mightrix::{ Stacktrix, ColumnPrio };
     /// let mut data = vec![1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4];
-    /// let mut m = Stacktrix::<16, 4, 4, CollumPrio, u8>::from_values(&mut data[..]);
+    /// let mut m = Stacktrix::<16, 4, 4, ColumnPrio, u8>::from_values(&mut data[..]);
     /// m.fill_row(1, &[7,7,7,7]);
     /// assert_eq!(m.get((1,0)), &7);
     /// assert_eq!(m.get((1,1)), &7);
@@ -147,15 +147,15 @@ where
     /// # Examples
     ///
     /// ```
-    /// # use mightrix::{ Stacktrix, CollumPrio };
+    /// # use mightrix::{ Stacktrix, ColumnPrio };
     /// let mut data = vec![1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4];
-    /// let mut m = Stacktrix::<16, 4, 4, CollumPrio, u8>::from_values(&mut data[..]);
+    /// let mut m = Stacktrix::<16, 4, 4, ColumnPrio, u8>::from_values(&mut data[..]);
     /// assert_eq!(m.get_collumn(0), &[1,1,1,1]);
     /// ```
     pub fn get_collumn(&self, col: usize) -> &[T] {
         assert!(
             col < C,
-            "Collumn: {} out of bounds {}, be carefull collumns are 0 indexed.",
+            "Column: {} out of bounds {}, be carefull collumns are 0 indexed.",
             col,
             C
         );
@@ -171,7 +171,7 @@ where
     pub fn get_mut_collumn(&mut self, col: usize) -> &mut [T] {
         assert!(
             col < C,
-            "Collumn: {} out of bounds {}, be carefull collumns are 0 indexed.",
+            "Column: {} out of bounds {}, be carefull collumns are 0 indexed.",
             col,
             C
         );
@@ -218,9 +218,9 @@ where
     /// # Examples
     ///
     /// ```
-    /// # use mightrix::{ Stacktrix, CollumPrio };
+    /// # use mightrix::{ Stacktrix, ColumnPrio };
     /// let mut data = vec![1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4];
-    /// let mut m = Stacktrix::<16, 4, 4, CollumPrio, u8>::from_values(&mut data[..]);
+    /// let mut m = Stacktrix::<16, 4, 4, ColumnPrio, u8>::from_values(&mut data[..]);
     /// m.apply_all(|el| *el *= 2);
     /// assert_eq!(m.get_collumn(0), &[2,2,2,2]);
     /// assert_eq!(m.get_collumn(1), &[4,4,4,4]);
@@ -353,7 +353,7 @@ where
     /// ```
     pub fn fill_col(&'a mut self, col: usize, data: &[T]) {
         assert_eq!(data.len(), R);
-        for (dst, src) in self.get_mut_collumn(col).into_iter().zip(data.iter()) {
+        for (dst, src) in self.get_mut_column(col).into_iter().zip(data.iter()) {
             *dst = *src;
         }
     }
@@ -381,15 +381,15 @@ where
         self.inner[start..start + C].copy_from_slice(data);
     }
 
-    /// Retrieves a [`Collumn`].
+    /// Retrieves a [`Column`].
     ///
     /// # Panics
     ///
     /// If the col is out of bounds.
-    pub fn get_collumn(&'a self, col: usize) -> Column<'a, R, C, T> {
+    pub fn get_column(&'a self, col: usize) -> Column<'a, R, C, T> {
         assert!(
             col < C,
-            "Collumn: {} out of bounds {}, be carefull collumns are 0 indexed.",
+            "Column: {} out of bounds {}, be carefull collumns are 0 indexed.",
             col,
             C
         );
@@ -398,15 +398,15 @@ where
         }
     }
 
-    /// Retrieves a [`CollumnMut`].
+    /// Retrieves a [`ColumnMut`].
     ///
     /// # Panics
     ///
     /// If the col is out of bounds.
-    pub fn get_mut_collumn(&'a mut self, col: usize) -> ColumnMut<'a, R, C, T> {
+    pub fn get_mut_column(&'a mut self, col: usize) -> ColumnMut<'a, R, C, T> {
         assert!(
             col < C,
-            "Collumn: {} out of bounds {}, be carefull collumns are 0 indexed.",
+            "Column: {} out of bounds {}, be carefull collumns are 0 indexed.",
             col,
             C
         );
