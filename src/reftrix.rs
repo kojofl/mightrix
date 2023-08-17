@@ -1,4 +1,4 @@
-use crate::{CollumPrio, Collumn, CollumnMut, Position, Row, RowMut, RowPrio};
+use crate::{Column, ColumnMut, ColumnPrio, Position, Row, RowMut, RowPrio};
 use std::{fmt::Debug, marker::PhantomData};
 
 /// Reftrix allows a mutable slice to be used as a Matrix.
@@ -11,7 +11,7 @@ pub struct Reftrix<'a, const R: usize, const C: usize, MemoryPriority, T> {
     _prio: PhantomData<MemoryPriority>,
 }
 
-impl<'a, 'i, 'r, const R: usize, const C: usize, T> Reftrix<'a, R, C, CollumPrio, T>
+impl<'a, 'i, 'r, const R: usize, const C: usize, T> Reftrix<'a, R, C, ColumnPrio, T>
 where
     Self: 'a,
     'a: 'r,
@@ -385,14 +385,14 @@ where
     /// # Panics
     ///
     /// If the Collumns is out of bounds.
-    pub fn get_collumn(&self, col: usize) -> Collumn<'_, R, C, T> {
+    pub fn get_collumn(&self, col: usize) -> Column<'_, R, C, T> {
         assert!(
             col < C,
             "Collumn: {} out of bounds {}, be carefull collumns are 0 indexed.",
             col,
             C
         );
-        Collumn {
+        Column {
             start: &self.inner[col],
         }
     }
@@ -402,14 +402,14 @@ where
     /// # Panics
     ///
     /// If the Collumns is out of bounds.
-    pub fn get_mut_collumn(&mut self, col: usize) -> CollumnMut<'_, R, C, T> {
+    pub fn get_mut_collumn(&mut self, col: usize) -> ColumnMut<'_, R, C, T> {
         assert!(
             col < C,
             "Collumn: {} out of bounds {}, be carefull collumns are 0 indexed.",
             col,
             C
         );
-        CollumnMut {
+        ColumnMut {
             start: &mut self.inner[col],
         }
     }

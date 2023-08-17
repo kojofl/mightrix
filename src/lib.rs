@@ -39,7 +39,7 @@ type Position = (usize, usize);
 /// |Row1      | 1       | 2       | 3       | 4       |
 /// |Row2      | 1       | 2       | 3       | 4       |
 /// |Row3      | 1       | 2       | 3       | 4       |
-pub struct CollumPrio;
+pub struct ColumnPrio;
 
 /// Matrices ([`Reftrix`], [`Stacktrix`]) with RowPrio use a row first memory representation.
 ///
@@ -176,11 +176,11 @@ impl<'a, const L: usize, const S: usize, T> Iterator for RowIntoItterator<'a, L,
 ///
 /// Since the underlying data is not continuous all slice operations are unavailable to the Collumn
 /// struct. It can however be indexed and iterated over.
-pub struct Collumn<'a, const L: usize, const S: usize, T> {
+pub struct Column<'a, const L: usize, const S: usize, T> {
     start: &'a T,
 }
 
-impl<'a, const L: usize, const S: usize, T> Index<usize> for Collumn<'a, L, S, T> {
+impl<'a, const L: usize, const S: usize, T> Index<usize> for Column<'a, L, S, T> {
     type Output = T;
 
     fn index(&self, index: usize) -> &Self::Output {
@@ -195,11 +195,11 @@ impl<'a, const L: usize, const S: usize, T> Index<usize> for Collumn<'a, L, S, T
 ///
 /// Since the underlying data is not continuous all slice operations are unavailable to the
 /// CollumnMut struct. It can however be indexed and iterated over.
-pub struct CollumnMut<'a, const L: usize, const S: usize, T> {
+pub struct ColumnMut<'a, const L: usize, const S: usize, T> {
     start: &'a mut T,
 }
 
-impl<'a, const L: usize, const S: usize, T> Index<usize> for CollumnMut<'a, L, S, T> {
+impl<'a, const L: usize, const S: usize, T> Index<usize> for ColumnMut<'a, L, S, T> {
     type Output = T;
 
     fn index(&self, index: usize) -> &Self::Output {
@@ -210,7 +210,7 @@ impl<'a, const L: usize, const S: usize, T> Index<usize> for CollumnMut<'a, L, S
     }
 }
 
-impl<'a, const L: usize, const S: usize, T> IndexMut<usize> for CollumnMut<'a, L, S, T> {
+impl<'a, const L: usize, const S: usize, T> IndexMut<usize> for ColumnMut<'a, L, S, T> {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
         if index >= L {
             panic!("Index {index} out of bounds {}", L);
@@ -220,25 +220,25 @@ impl<'a, const L: usize, const S: usize, T> IndexMut<usize> for CollumnMut<'a, L
 }
 
 #[doc(hidden)]
-pub struct CollumnMutIntoItterator<'a, const L: usize, const S: usize, T> {
-    collumn: CollumnMut<'a, L, S, T>,
+pub struct ColumnMutIntoItterator<'a, const L: usize, const S: usize, T> {
+    collumn: ColumnMut<'a, L, S, T>,
     index: usize,
 }
 
-impl<'a, const L: usize, const S: usize, T> IntoIterator for CollumnMut<'a, L, S, T> {
+impl<'a, const L: usize, const S: usize, T> IntoIterator for ColumnMut<'a, L, S, T> {
     type Item = &'a mut T;
 
-    type IntoIter = CollumnMutIntoItterator<'a, L, S, T>;
+    type IntoIter = ColumnMutIntoItterator<'a, L, S, T>;
 
     fn into_iter(self) -> Self::IntoIter {
-        CollumnMutIntoItterator {
+        ColumnMutIntoItterator {
             collumn: self,
             index: 0,
         }
     }
 }
 
-impl<'a, const L: usize, const S: usize, T> Iterator for CollumnMutIntoItterator<'a, L, S, T> {
+impl<'a, const L: usize, const S: usize, T> Iterator for ColumnMutIntoItterator<'a, L, S, T> {
     type Item = &'a mut T;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -254,25 +254,25 @@ impl<'a, const L: usize, const S: usize, T> Iterator for CollumnMutIntoItterator
 }
 
 #[doc(hidden)]
-pub struct CollumnIntoItterator<'a, const L: usize, const S: usize, T> {
-    collumn: Collumn<'a, L, S, T>,
+pub struct ColumnIntoItterator<'a, const L: usize, const S: usize, T> {
+    collumn: Column<'a, L, S, T>,
     index: usize,
 }
 
-impl<'a, const L: usize, const S: usize, T> IntoIterator for Collumn<'a, L, S, T> {
+impl<'a, const L: usize, const S: usize, T> IntoIterator for Column<'a, L, S, T> {
     type Item = &'a T;
 
-    type IntoIter = CollumnIntoItterator<'a, L, S, T>;
+    type IntoIter = ColumnIntoItterator<'a, L, S, T>;
 
     fn into_iter(self) -> Self::IntoIter {
-        CollumnIntoItterator {
+        ColumnIntoItterator {
             collumn: self,
             index: 0,
         }
     }
 }
 
-impl<'a, const L: usize, const S: usize, T> Iterator for CollumnIntoItterator<'a, L, S, T> {
+impl<'a, const L: usize, const S: usize, T> Iterator for ColumnIntoItterator<'a, L, S, T> {
     type Item = &'a T;
 
     fn next(&mut self) -> Option<Self::Item> {
