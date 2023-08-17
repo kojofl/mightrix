@@ -57,3 +57,12 @@ fn row_out_of_bounds_col_ref() {
     let m = Reftrix::<4, 4, CollumPrio, u8>::from_values(&mut values);
     m.get_row(4);
 }
+
+#[test]
+#[should_panic]
+fn row_index_out_of_bounds() {
+    let mut values = vec![1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4];
+    let m = Reftrix::<4, 4, CollumPrio, u8>::from_values(&mut values);
+    let row = m.get_row(3);
+    let _ = row[5];
+}

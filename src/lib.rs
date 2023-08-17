@@ -19,10 +19,7 @@
 //! * [`Stacktrix`]:
 //! This matrix copies the data and uses a fixed size array on the stack, this way the original
 //! data is not manipulated.
-use std::{
-    mem::size_of,
-    ops::{Index, IndexMut},
-};
+use std::ops::{Index, IndexMut};
 
 #[doc(hidden)]
 pub mod reftrix;
@@ -72,7 +69,10 @@ impl<'a, const L: usize, const S: usize, T> Index<usize> for Row<'a, L, S, T> {
     type Output = T;
 
     fn index(&self, index: usize) -> &Self::Output {
-        unsafe { &*((self.start as *const T).add(index * S * size_of::<T>())) }
+        if index >= L {
+            panic!("Index {index} out of bounds {}", L);
+        }
+        unsafe { &*((self.start as *const T).add(index * S)) }
     }
 }
 
@@ -88,13 +88,19 @@ impl<'a, const L: usize, const S: usize, T> Index<usize> for RowMut<'a, L, S, T>
     type Output = T;
 
     fn index(&self, index: usize) -> &Self::Output {
-        unsafe { &*((self.start as *const T).add(index * S * size_of::<T>())) }
+        if index >= L {
+            panic!("Index {index} out of bounds {}", L);
+        }
+        unsafe { &*((self.start as *const T).add(index * S)) }
     }
 }
 
 impl<'a, const L: usize, const S: usize, T> IndexMut<usize> for RowMut<'a, L, S, T> {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
-        unsafe { &mut *((self.start as *mut T).add(index * S * size_of::<T>())) }
+        if index >= L {
+            panic!("Index {index} out of bounds {}", L);
+        }
+        unsafe { &mut *((self.start as *mut T).add(index * S)) }
     }
 }
 
@@ -125,7 +131,7 @@ impl<'a, const L: usize, const S: usize, T> Iterator for RowMutIntoItterator<'a,
             return None;
         }
         unsafe {
-            let next = &mut *((self.row.start as *mut T).add(self.index * S * size_of::<T>()));
+            let next = &mut *((self.row.start as *mut T).add(self.index * S));
             self.index += 1;
             Some(next)
         }
@@ -159,7 +165,7 @@ impl<'a, const L: usize, const S: usize, T> Iterator for RowIntoItterator<'a, L,
             return None;
         }
         unsafe {
-            let next = &*((self.row.start as *const T).add(self.index * S * size_of::<T>()));
+            let next = &*((self.row.start as *const T).add(self.index * S));
             self.index += 1;
             Some(next)
         }
@@ -178,7 +184,10 @@ impl<'a, const L: usize, const S: usize, T> Index<usize> for Collumn<'a, L, S, T
     type Output = T;
 
     fn index(&self, index: usize) -> &Self::Output {
-        unsafe { &*((self.start as *const T).add(index * S * size_of::<T>())) }
+        if index >= L {
+            panic!("Index {index} out of bounds {}", L);
+        }
+        unsafe { &*((self.start as *const T).add(index * S)) }
     }
 }
 
@@ -194,13 +203,19 @@ impl<'a, const L: usize, const S: usize, T> Index<usize> for CollumnMut<'a, L, S
     type Output = T;
 
     fn index(&self, index: usize) -> &Self::Output {
-        unsafe { &*((self.start as *const T).add(index * S * size_of::<T>())) }
+        if index >= L {
+            panic!("Index {index} out of bounds {}", L);
+        }
+        unsafe { &*((self.start as *const T).add(index * S)) }
     }
 }
 
 impl<'a, const L: usize, const S: usize, T> IndexMut<usize> for CollumnMut<'a, L, S, T> {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
-        unsafe { &mut *((self.start as *mut T).add(index * S * size_of::<T>())) }
+        if index >= L {
+            panic!("Index {index} out of bounds {}", L);
+        }
+        unsafe { &mut *((self.start as *mut T).add(index * S)) }
     }
 }
 
@@ -231,7 +246,7 @@ impl<'a, const L: usize, const S: usize, T> Iterator for CollumnMutIntoItterator
             return None;
         }
         unsafe {
-            let next = &mut *((self.collumn.start as *mut T).add(self.index * S * size_of::<T>()));
+            let next = &mut *((self.collumn.start as *mut T).add(self.index * S));
             self.index += 1;
             Some(next)
         }
@@ -265,7 +280,7 @@ impl<'a, const L: usize, const S: usize, T> Iterator for CollumnIntoItterator<'a
             return None;
         }
         unsafe {
-            let next = &*((self.collumn.start as *const T).add(self.index * S * size_of::<T>()));
+            let next = &*((self.collumn.start as *const T).add(self.index * S));
             self.index += 1;
             Some(next)
         }
