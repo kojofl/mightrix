@@ -208,9 +208,9 @@ where
             row,
             R
         );
-        return RowMut {
+        RowMut {
             start: &mut self.inner[row],
-        };
+        }
     }
 
     /// Applies a function on all elements of the matrix.
@@ -410,9 +410,9 @@ where
             col,
             C
         );
-        return CollumnMut {
+        CollumnMut {
             start: &mut self.inner[col],
-        };
+        }
     }
 
     /// Retrieves a immutable slice that represents the row.
