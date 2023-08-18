@@ -170,6 +170,10 @@ pub trait ColumnPrioMatrix<'a, const R: usize, const C: usize, T> {
     ///
     /// If the row is out of bounds.
     fn get_mut_row(&mut self, row: usize) -> RowMut<'_, R, C, T>;
+    /// Returns an iterator over all rows [`Row`] inside the matrix.
+    fn rows(&self) -> IterRows<'_, R, C, T>;
+    /// Returns an iterator over all rows in a mutable manner [`RowMut`] inside the matrix.
+    fn rows_mut(&mut self) -> IterRowsMut<'_, R, C, T>;
     /// Applies a function on all elements of the matrix.
     ///
     /// # Examples
@@ -535,7 +539,7 @@ impl<'a, const C: usize, const S: usize, T> Iterator for ColumnIntoItterator<'a,
     }
 }
 
-/// RowPrioMatrix/ IterRows represents an iterator over all rows of a Matrix.
+/// IterRows represents an iterator over all rows of a Matrix.
 pub struct IterRows<'a, const R: usize, const S: usize, T> {
     row: usize,
     matrix_buffer: &'a [T],
@@ -553,5 +557,31 @@ impl<'a, const R: usize, const S: usize, T> Iterator for IterRows<'a, R, S, T> {
         };
         self.row += 1;
         Some(r)
+    }
+}
+
+/// IterRows represents an iterator over all rows of a Matrix.
+pub struct IterRowsMut<'a, const R: usize, const S: usize, T> {
+    row: usize,
+    matrix_buffer: &'a mut [T],
+}
+
+impl<'a, const R: usize, const S: usize, T> Iterator for IterRowsMut<'a, R, S, T>
+where
+    Self: 'a,
+{
+    type Item = RowMut<'a, R, S, T>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.row >= R {
+            return None;
+        };
+        // SAFETY:
+        // The RowMut point to the same array in memory but never touch the same elements.
+        let row = RowMut {
+            start: unsafe { std::mem::transmute(&mut self.matrix_buffer[self.row]) },
+        };
+        self.row += 1;
+        Some(row)
     }
 }
