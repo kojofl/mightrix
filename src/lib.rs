@@ -1,14 +1,10 @@
+#![doc = include_str!("../README.md")]
 #![warn(missing_docs)]
-//! The mightrix crate exposes matrix types that let continuous memory be used as
-//! if it where a matrix. The dimensions of the matrix is asserted through const
-//! generics. This way the owned variant of the matrix ([`Stacktrix`]) can use
-//! a fixed size array on the stack.
-//!
 //! This library does not aim to be a math library and therefore does not implement
 //! common matrix operations, though they might be implemented over time.
 //!
 //! This crate is currently used to implement the aes algorithm. In that algorithm
-//! the state is represented as a collumn first [`ColumnPrio`] matrix, and all operations
+//! the state is represented as a column first [`ColumnPrio`] matrix, and all operations
 //! are done on that Matrix.
 //!
 //! Currently there are two matrix types:
@@ -28,7 +24,7 @@ pub mod stacktrix;
 
 type Position = (usize, usize);
 
-/// Matrices ([`Reftrix`], [`Stacktrix`]) with Columnprio use a collumn first memory representation.
+/// Matrices ([`Reftrix`], [`Stacktrix`]) with Columnprio use a column first memory representation.
 ///
 /// An array of [1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4]
 /// is therefor represented as the Matrix:
@@ -98,13 +94,13 @@ pub trait ColumnPrioMatrix<'a, const R: usize, const C: usize, T> {
     ///
     /// If the location given is out of bounds in x or y the function panics.
     fn get_mut(&'a mut self, location: (usize, usize)) -> &'a mut T;
-    /// Fills an entire collumn with the given data.
+    /// Fills an entire column with the given data.
     ///
     /// # Panics
     ///
-    /// If the collumn is out of bounds.
+    /// If the column is out of bounds.
     ///
-    /// If the data is not the size of a collumn.
+    /// If the data is not the size of a column.
     ///
     /// # Examples
     ///
@@ -141,11 +137,11 @@ pub trait ColumnPrioMatrix<'a, const R: usize, const C: usize, T> {
     /// assert_eq!(data[13], 7);
     /// ```
     fn fill_row(&mut self, row: usize, data: &[T]);
-    /// Retrieves a immutable slice that represents the collumn.
+    /// Retrieves a immutable slice that represents the column.
     ///
     /// # Panics
     ///
-    /// If the collumn is out of bounds.
+    /// If the column is out of bounds.
     ///
     /// # Examples
     ///
@@ -153,15 +149,15 @@ pub trait ColumnPrioMatrix<'a, const R: usize, const C: usize, T> {
     /// # use mightrix::{ Reftrix, ColumnPrio, ColumnPrioMatrix };
     /// let mut data = vec![1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4];
     /// let mut reftrix = Reftrix::<4, 4, ColumnPrio, u8>::from_values(&mut data[..]);
-    /// assert_eq!(reftrix.get_collumn(0), &[1,1,1,1]);
+    /// assert_eq!(reftrix.get_column(0), &[1,1,1,1]);
     /// ```
-    fn get_collumn(&self, col: usize) -> &[T];
-    /// Retrieves a mutable slice that represents the collumn.
+    fn get_column(&self, col: usize) -> &[T];
+    /// Retrieves a mutable slice that represents the column.
     ///
     /// # Panics
     ///
-    /// If the collumn is out of bounds.
-    fn get_mut_collumn(&mut self, col: usize) -> &mut [T];
+    /// If the column is out of bounds.
+    fn get_mut_column(&mut self, col: usize) -> &mut [T];
     /// Retrieves a [`Row`].
     ///
     /// # Panics
@@ -248,13 +244,13 @@ pub trait RowPrioMatrix<'a, const R: usize, const C: usize, T> {
     /// assert_eq!(&data[4..8], &[7,7,7,7]);
     /// ```
     fn fill_row(&mut self, row: usize, data: &[T]);
-    /// Fills an entire collumn with the given data.
+    /// Fills an entire column with the given data.
     ///
     /// # Panics
     ///
-    /// If the collumn is out of bounds.
+    /// If the column is out of bounds.
     ///
-    /// If the data is not the size of a collumn.
+    /// If the data is not the size of a column.
     ///
     /// # Examples
     ///
@@ -424,7 +420,7 @@ impl<'a, const R: usize, const S: usize, T> Iterator for RowIntoItterator<'a, R,
     }
 }
 
-/// The Column struct represents a mutable matrix collumn in all [`RowPrio`] matrices.
+/// The Column struct represents a mutable matrix column in all [`RowPrio`] matrices.
 ///
 /// Since the underlying data is not continuous all slice operations are unavailable to the Column
 /// struct. It can however be indexed and iterated over.
@@ -443,7 +439,7 @@ impl<'a, const C: usize, const S: usize, T> Index<usize> for Column<'a, C, S, T>
     }
 }
 
-/// The Column struct represents a mutable matrix collumn in all [`RowPrio`] matrices.
+/// The Column struct represents a mutable matrix column in all [`RowPrio`] matrices.
 ///
 /// Since the underlying data is not continuous all slice operations are unavailable to the
 /// ColumnMut struct. It can however be indexed and iterated over.
@@ -473,7 +469,7 @@ impl<'a, const C: usize, const S: usize, T> IndexMut<usize> for ColumnMut<'a, C,
 
 #[doc(hidden)]
 pub struct ColumnMutIntoItterator<'a, const C: usize, const S: usize, T> {
-    collumn: ColumnMut<'a, C, S, T>,
+    column: ColumnMut<'a, C, S, T>,
     index: usize,
 }
 
@@ -484,7 +480,7 @@ impl<'a, const C: usize, const S: usize, T> IntoIterator for ColumnMut<'a, C, S,
 
     fn into_iter(self) -> Self::IntoIter {
         ColumnMutIntoItterator {
-            collumn: self,
+            column: self,
             index: 0,
         }
     }
@@ -498,7 +494,7 @@ impl<'a, const C: usize, const S: usize, T> Iterator for ColumnMutIntoItterator<
             return None;
         }
         unsafe {
-            let next = &mut *((self.collumn.start as *mut T).add(self.index * C));
+            let next = &mut *((self.column.start as *mut T).add(self.index * C));
             self.index += 1;
             Some(next)
         }
@@ -507,7 +503,7 @@ impl<'a, const C: usize, const S: usize, T> Iterator for ColumnMutIntoItterator<
 
 #[doc(hidden)]
 pub struct ColumnIntoItterator<'a, const C: usize, const S: usize, T> {
-    collumn: Column<'a, C, S, T>,
+    column: Column<'a, C, S, T>,
     index: usize,
 }
 
@@ -518,7 +514,7 @@ impl<'a, const C: usize, const S: usize, T> IntoIterator for Column<'a, C, S, T>
 
     fn into_iter(self) -> Self::IntoIter {
         ColumnIntoItterator {
-            collumn: self,
+            column: self,
             index: 0,
         }
     }
@@ -532,14 +528,14 @@ impl<'a, const C: usize, const S: usize, T> Iterator for ColumnIntoItterator<'a,
             return None;
         }
         unsafe {
-            let next = &*((self.collumn.start as *const T).add(self.index * C));
+            let next = &*((self.column.start as *const T).add(self.index * C));
             self.index += 1;
             Some(next)
         }
     }
 }
 
-//, RowPrioMatrix/ IterRows represents an iterator over all rows of a Matrix.
+/// RowPrioMatrix/ IterRows represents an iterator over all rows of a Matrix.
 pub struct IterRows<'a, const R: usize, const S: usize, T> {
     row: usize,
     matrix_buffer: &'a [T],

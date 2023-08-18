@@ -31,7 +31,7 @@ fn col_first_ref() {
 fn col_out_of_bounds_col_stack() {
     let mut values = vec![1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4];
     let m = Stacktrix::<16, 4, 4, ColumnPrio, u8>::from_values(&mut values);
-    m.get_collumn(4);
+    m.get_column(4);
 }
 
 #[test]
@@ -39,7 +39,7 @@ fn col_out_of_bounds_col_stack() {
 fn col_out_of_bounds_col_ref() {
     let mut values = vec![1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4];
     let m = Reftrix::<4, 4, ColumnPrio, u8>::from_values(&mut values);
-    m.get_collumn(4);
+    m.get_column(4);
 }
 
 #[test]

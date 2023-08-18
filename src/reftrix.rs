@@ -1,13 +1,12 @@
 use crate::{
-    Column, ColumnMut, ColumnPrio, ColumnPrioMatrix, IterRows, Position, Row, RowMut, RowPrio,
-    RowPrioMatrix,
+    Column, ColumnMut, ColumnPrio, ColumnPrioMatrix, Position, Row, RowMut, RowPrio, RowPrioMatrix,
 };
 use std::{fmt::Debug, marker::PhantomData};
 
 /// Reftrix allows a mutable slice to be used as a Matrix.
 ///
 /// A Reftrix matrix operates on a mutable slice. The number of rows is indicated by R the number
-/// of collumns by C. MemoryPriority indicates how the underlying memory is interpreted. (see
+/// of columns by C. MemoryPriority indicates how the underlying memory is interpreted. (see
 /// [`ColumnPrio`], [`RowPrio`])
 pub struct Reftrix<'a, const R: usize, const C: usize, MemoryPriority, T> {
     inner: &'a mut [T],
@@ -45,15 +44,15 @@ where
     T: Copy + Default + Debug,
 {
     fn insert(&mut self, location: Position, value: T) {
-        self.get_mut_collumn(location.1)[location.0] = value;
+        self.get_mut_column(location.1)[location.0] = value;
     }
 
     fn get(&'a self, location: Position) -> &'a T {
-        &self.get_collumn(location.1)[location.0]
+        &self.get_column(location.1)[location.0]
     }
 
     fn get_mut(&'a mut self, location: Position) -> &'a mut T {
-        &mut self.get_mut_collumn(location.1)[location.0]
+        &mut self.get_mut_column(location.1)[location.0]
     }
 
     fn fill_col(&mut self, col: usize, data: &[T]) {
@@ -69,10 +68,10 @@ where
         }
     }
 
-    fn get_collumn(&self, col: usize) -> &[T] {
+    fn get_column(&self, col: usize) -> &[T] {
         assert!(
             col < C,
-            "Column: {} out of bounds {}, be carefull collumns are 0 indexed.",
+            "Column: {} out of bounds {}, be carefull columns are 0 indexed.",
             col,
             C
         );
@@ -80,10 +79,10 @@ where
         &self.inner[start..start + R]
     }
 
-    fn get_mut_collumn(&mut self, col: usize) -> &mut [T] {
+    fn get_mut_column(&mut self, col: usize) -> &mut [T] {
         assert!(
             col < C,
-            "Column: {} out of bounds {}, be carefull collumns are 0 indexed.",
+            "Column: {} out of bounds {}, be carefull columns are 0 indexed.",
             col,
             C
         );
@@ -178,7 +177,7 @@ where
     fn get_column(&self, col: usize) -> Column<'_, R, C, T> {
         assert!(
             col < C,
-            "Column: {} out of bounds {}, be carefull collumns are 0 indexed.",
+            "Column: {} out of bounds {}, be carefull columns are 0 indexed.",
             col,
             C
         );
@@ -190,7 +189,7 @@ where
     fn get_mut_column(&mut self, col: usize) -> ColumnMut<'_, R, C, T> {
         assert!(
             col < C,
-            "Column: {} out of bounds {}, be carefull collumns are 0 indexed.",
+            "Column: {} out of bounds {}, be carefull columns are 0 indexed.",
             col,
             C
         );
@@ -229,7 +228,7 @@ where
 
     fn pretty_print(&self) {
         let strings: Vec<String> = self.inner.iter().map(|el| format!("{:02x?}", el)).collect();
-        let _collumn_width = strings.iter().map(|el| el.len()).max();
+        let _column_width = strings.iter().map(|el| el.len()).max();
         let mut index = 0;
         for _ in 0..R {
             for i in 0..C {

@@ -6,7 +6,7 @@ use std::{fmt::Debug, marker::PhantomData, mem::MaybeUninit};
 /// Stacktrix allows a stack based array to be used as a Matrix.
 ///
 /// A Stacktrix matrix operates on a a stack based array. The number of rows is indicated by R the number
-/// of collumns by C, S indicates the entire size this is necessary since const expressions are
+/// of columns by C, S indicates the entire size this is necessary since const expressions are
 /// still nightly only. MemoryPriority indicates how the underlying memory is interpreted. (see
 /// [`ColumnPrio`], [`RowPrio`])
 pub struct Stacktrix<const S: usize, const R: usize, const C: usize, MemoryPrio, T> {
@@ -74,7 +74,7 @@ where
     /// assert_eq!(m.get((3,0)), &0);
     /// ```
     fn insert(&mut self, location: Position, value: T) {
-        self.get_mut_collumn(location.1)[location.0] = value;
+        self.get_mut_column(location.1)[location.0] = value;
     }
     /// Get a immutable reference to a value in the matrix at location (x, y)
     ///
@@ -91,7 +91,7 @@ where
     /// assert_eq!(m.get((0, 2)), &3);
     /// ```
     fn get(&'a self, location: Position) -> &'a T {
-        &self.get_collumn(location.1)[location.0]
+        &self.get_column(location.1)[location.0]
     }
 
     /// Get a mutable reference to a value in the matrix at location (x, y)
@@ -100,16 +100,16 @@ where
     ///
     /// If the location given is out of bounds in x or y the function panics.
     fn get_mut(&'a mut self, location: Position) -> &'a mut T {
-        &mut self.get_mut_collumn(location.1)[location.0]
+        &mut self.get_mut_column(location.1)[location.0]
     }
 
-    /// Fills an entire collumn with the given data.
+    /// Fills an entire column with the given data.
     ///
     /// # Panics
     ///
-    /// If the collumn is out of bounds.
+    /// If the column is out of bounds.
     ///
-    /// If the data is not the size of a collumn.
+    /// If the data is not the size of a column.
     ///
     /// # Examples
     ///
@@ -118,7 +118,7 @@ where
     /// let mut data = vec![1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4];
     /// let mut m = Stacktrix::<16, 4, 4, ColumnPrio, u8>::from_values(&mut data[..]);
     /// m.fill_col(1, &[7,7,7,7]);
-    /// assert_eq!(m.get_collumn(1), &[7,7,7,7]);
+    /// assert_eq!(m.get_column(1), &[7,7,7,7]);
     /// ```
     fn fill_col(&mut self, col: usize, data: &[T]) {
         assert_eq!(data.len(), C);
@@ -153,11 +153,11 @@ where
         }
     }
 
-    /// Retrieves a immutable slice that represents the collumn.
+    /// Retrieves a immutable slice that represents the column.
     ///
     /// # Panics
     ///
-    /// If the collumn is out of bounds.
+    /// If the column is out of bounds.
     ///
     /// # Examples
     ///
@@ -165,12 +165,12 @@ where
     /// # use mightrix::{ Stacktrix, ColumnPrio, ColumnPrioMatrix };
     /// let mut data = vec![1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4];
     /// let mut m = Stacktrix::<16, 4, 4, ColumnPrio, u8>::from_values(&mut data[..]);
-    /// assert_eq!(m.get_collumn(0), &[1,1,1,1]);
+    /// assert_eq!(m.get_column(0), &[1,1,1,1]);
     /// ```
-    fn get_collumn(&self, col: usize) -> &[T] {
+    fn get_column(&self, col: usize) -> &[T] {
         assert!(
             col < C,
-            "Column: {} out of bounds {}, be carefull collumns are 0 indexed.",
+            "Column: {} out of bounds {}, be carefull columns are 0 indexed.",
             col,
             C
         );
@@ -178,15 +178,15 @@ where
         &self.inner[start..start + C]
     }
 
-    /// Retrieves a mutable slice that represents the collumn.
+    /// Retrieves a mutable slice that represents the column.
     ///
     /// # Panics
     ///
-    /// If the collumn is out of bounds.
-    fn get_mut_collumn(&mut self, col: usize) -> &mut [T] {
+    /// If the column is out of bounds.
+    fn get_mut_column(&mut self, col: usize) -> &mut [T] {
         assert!(
             col < C,
-            "Column: {} out of bounds {}, be carefull collumns are 0 indexed.",
+            "Column: {} out of bounds {}, be carefull columns are 0 indexed.",
             col,
             C
         );
@@ -237,10 +237,10 @@ where
     /// let mut data = vec![1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4];
     /// let mut m = Stacktrix::<16, 4, 4, ColumnPrio, u8>::from_values(&mut data[..]);
     /// m.apply_all(|el| *el *= 2);
-    /// assert_eq!(m.get_collumn(0), &[2,2,2,2]);
-    /// assert_eq!(m.get_collumn(1), &[4,4,4,4]);
-    /// assert_eq!(m.get_collumn(2), &[6,6,6,6]);
-    /// assert_eq!(m.get_collumn(3), &[8,8,8,8]);
+    /// assert_eq!(m.get_column(0), &[2,2,2,2]);
+    /// assert_eq!(m.get_column(1), &[4,4,4,4]);
+    /// assert_eq!(m.get_column(2), &[6,6,6,6]);
+    /// assert_eq!(m.get_column(3), &[8,8,8,8]);
     /// ```
     fn apply_all(&mut self, f: fn(&mut T)) {
         for el in self.inner.iter_mut() {
@@ -322,13 +322,13 @@ where
         &mut self.get_mut_row(location.0)[location.1]
     }
 
-    /// Fills an entire collumn with the given data.
+    /// Fills an entire column with the given data.
     ///
     /// # Panics
     ///
-    /// If the collumn is out of bounds.
+    /// If the column is out of bounds.
     ///
-    /// If the data is not the size of a collumn.
+    /// If the data is not the size of a column.
     ///
     /// # Examples
     ///
@@ -380,7 +380,7 @@ where
     fn get_column(&self, col: usize) -> Column<'_, R, C, T> {
         assert!(
             col < C,
-            "Column: {} out of bounds {}, be carefull collumns are 0 indexed.",
+            "Column: {} out of bounds {}, be carefull columns are 0 indexed.",
             col,
             C
         );
@@ -397,7 +397,7 @@ where
     fn get_mut_column(&mut self, col: usize) -> ColumnMut<'_, R, C, T> {
         assert!(
             col < C,
-            "Column: {} out of bounds {}, be carefull collumns are 0 indexed.",
+            "Column: {} out of bounds {}, be carefull columns are 0 indexed.",
             col,
             C
         );
@@ -470,7 +470,7 @@ where
     /// Prints out the matrix, this is only usefull for numeric types.
     fn pretty_print(&self) {
         let strings: Vec<String> = self.inner.iter().map(|el| format!("{:02x?}", el)).collect();
-        let _collumn_width = strings.iter().map(|el| el.len()).max();
+        let _column_width = strings.iter().map(|el| el.len()).max();
         let mut index = 0;
         for _ in 0..R {
             for i in 0..C {
