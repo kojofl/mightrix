@@ -174,6 +174,10 @@ pub trait ColumnPrioMatrix<'a, const R: usize, const C: usize, T> {
     fn rows(&self) -> IterRows<'_, R, C, T>;
     /// Returns an iterator over all rows in a mutable manner [`RowMut`] inside the matrix.
     fn rows_mut(&mut self) -> IterRowsMut<'_, R, C, T>;
+    /// Returns an iterator over all collumns (slices) inside the matrix.
+    fn cols(&self) -> IterSlices<'_, R, C, T>;
+    /// Returns an iterator over all collumns in a mutable manner (mutable slices) inside the matrix.
+    fn cols_mut(&mut self) -> IterSlicesMut<'_, R, C, T>;
     /// Applies a function on all elements of the matrix.
     ///
     /// # Examples
@@ -583,5 +587,94 @@ where
         };
         self.row += 1;
         Some(row)
+    }
+}
+
+/// IterRows represents an iterator over all rows of a Matrix.
+pub struct IterCols<'a, const R: usize, const S: usize, T> {
+    row: usize,
+    matrix_buffer: &'a [T],
+}
+
+impl<'a, const R: usize, const S: usize, T> Iterator for IterCols<'a, R, S, T> {
+    type Item = Column<'a, R, S, T>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.row >= R {
+            return None;
+        };
+        let r = Column {
+            start: &self.matrix_buffer[self.row],
+        };
+        self.row += 1;
+        Some(r)
+    }
+}
+
+/// IterRows represents an iterator over all rows of a Matrix.
+pub struct IterColsMut<'a, const R: usize, const S: usize, T> {
+    row: usize,
+    matrix_buffer: &'a mut [T],
+}
+
+impl<'a, const R: usize, const S: usize, T> Iterator for IterColsMut<'a, R, S, T>
+where
+    Self: 'a,
+{
+    type Item = ColumnMut<'a, R, S, T>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.row >= R {
+            return None;
+        };
+        // SAFETY:
+        // The RowMut point to the same array in memory but never touch the same elements.
+        let row = ColumnMut {
+            start: unsafe { std::mem::transmute(&mut self.matrix_buffer[self.row]) },
+        };
+        self.row += 1;
+        Some(row)
+    }
+}
+
+/// IterRows represents an iterator over all rows of a Matrix.
+pub struct IterSlices<'a, const R: usize, const S: usize, T> {
+    matrix_buffer: &'a [T],
+}
+
+impl<'a, const R: usize, const S: usize, T> Iterator for IterSlices<'a, R, S, T> {
+    type Item = &'a [T];
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.matrix_buffer.is_empty() {
+            return None;
+        };
+        let (r, rest) = self.matrix_buffer.split_at(S);
+        self.matrix_buffer = rest;
+        Some(r)
+    }
+}
+
+/// IterRows represents an iterator over all rows of a Matrix.
+pub struct IterSlicesMut<'a, const R: usize, const S: usize, T> {
+    matrix_buffer: &'a mut [T],
+}
+
+impl<'a, const R: usize, const S: usize, T> Iterator for IterSlicesMut<'a, R, S, T> {
+    type Item = &'a mut [T];
+
+    fn next(&mut self) -> Option<Self::Item> {
+        unsafe {
+            if self.matrix_buffer.is_empty() {
+                return None;
+            };
+            // SAFETY:
+            // I think this should be okay since the lifetime is tied to the original
+            // matrix_buffer.
+            let (r, rest): (&mut [T], &mut [T]) =
+                std::mem::transmute(self.matrix_buffer.split_at_mut(S));
+            self.matrix_buffer = rest;
+            Some(std::mem::transmute(r))
+        }
     }
 }

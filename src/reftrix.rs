@@ -1,6 +1,6 @@
 use crate::{
-    Column, ColumnMut, ColumnPrio, ColumnPrioMatrix, IterRows, IterRowsMut, Position, Row, RowMut,
-    RowPrio, RowPrioMatrix,
+    Column, ColumnMut, ColumnPrio, ColumnPrioMatrix, IterRows, IterRowsMut, IterSlices,
+    IterSlicesMut, Position, Row, RowMut, RowPrio, RowPrioMatrix,
 };
 use std::{fmt::Debug, marker::PhantomData};
 
@@ -126,6 +126,18 @@ where
         IterRowsMut {
             row: 0,
             matrix_buffer: &mut self.inner,
+        }
+    }
+
+    fn cols(&self) -> IterSlices<'_, R, C, T> {
+        IterSlices {
+            matrix_buffer: self.inner,
+        }
+    }
+
+    fn cols_mut(&mut self) -> IterSlicesMut<'_, R, C, T> {
+        IterSlicesMut {
+            matrix_buffer: self.inner,
         }
     }
 
