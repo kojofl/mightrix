@@ -70,9 +70,29 @@ fn row_index_out_of_bounds() {
 #[test]
 fn iter_rows_ref() {
     let mut values = vec![1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4];
-    let m = Reftrix::<4, 4, ColumnPrio, u8>::from_values(&mut values);
-    // for row in m.rows() {
-    //     let v = row.into_iter().cloned().collect::<Vec<u8>>();
-    //     assert_eq!(&v[..], &[1, 2, 3, 4])
-    // }
+    let mut m = Reftrix::<4, 4, ColumnPrio, u8>::from_values(&mut values);
+    for row in m.rows_mut() {
+        for (i, el) in row.into_iter().enumerate() {
+            *el += i as u8;
+        }
+    }
+    assert_eq!(
+        &values[..],
+        &[1, 1, 1, 1, 3, 3, 3, 3, 5, 5, 5, 5, 7, 7, 7, 7]
+    );
+}
+
+#[test]
+fn iter_cols_ref() {
+    let mut values = vec![1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4];
+    let mut m = Reftrix::<4, 4, ColumnPrio, u8>::from_values(&mut values);
+    for col in m.cols_mut() {
+        for (i, el) in col.into_iter().enumerate() {
+            *el += i as u8;
+        }
+    }
+    assert_eq!(
+        &values[..],
+        &[1, 2, 3, 4, 2, 3, 4, 5, 3, 4, 5, 6, 4, 5, 6, 7]
+    );
 }

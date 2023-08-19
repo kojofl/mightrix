@@ -1,5 +1,6 @@
 use crate::{
-    Column, ColumnMut, ColumnPrio, ColumnPrioMatrix, Position, Row, RowMut, RowPrio, RowPrioMatrix,
+    ColumnPrio, ColumnPrioMatrix, IntermittentSlice, IntermittentSliceMut, IterIntermittentSlices,
+    IterMutIntermittentSlices, IterSlices, IterSlicesMut, Position, RowPrio, RowPrioMatrix,
 };
 use std::{fmt::Debug, marker::PhantomData};
 
@@ -90,27 +91,53 @@ where
         &mut self.inner[start..start + R]
     }
 
-    fn get_row(&self, row: usize) -> Row<'_, R, C, T> {
+    fn get_row(&self, row: usize) -> IntermittentSlice<'_, R, C, T> {
         assert!(
             row < R,
             "Row: {} out of bounds {}, be carefull rows are 0 indexed.",
             row,
             R
         );
-        Row {
+        IntermittentSlice {
             start: &self.inner[row],
         }
     }
 
-    fn get_mut_row(&mut self, row: usize) -> RowMut<'_, R, C, T> {
+    fn get_mut_row(&mut self, row: usize) -> IntermittentSliceMut<'_, R, C, T> {
         assert!(
             row < R,
             "Row: {} out of bounds {}, be carefull rows are 0 indexed.",
             row,
             R
         );
-        RowMut {
+        IntermittentSliceMut {
             start: &mut self.inner[row],
+        }
+    }
+
+    fn rows(&self) -> IterIntermittentSlices<'_, R, C, T> {
+        IterIntermittentSlices {
+            slice_index: 0,
+            matrix_buffer: self.inner,
+        }
+    }
+
+    fn rows_mut(&mut self) -> IterMutIntermittentSlices<'_, R, C, T> {
+        IterMutIntermittentSlices {
+            slice_index: 0,
+            matrix_buffer: self.inner,
+        }
+    }
+
+    fn cols(&self) -> IterSlices<'_, R, C, T> {
+        IterSlices {
+            matrix_buffer: self.inner,
+        }
+    }
+
+    fn cols_mut(&mut self) -> IterSlicesMut<'_, R, C, T> {
+        IterSlicesMut {
+            matrix_buffer: self.inner,
         }
     }
 
@@ -174,26 +201,26 @@ where
         }
     }
 
-    fn get_column(&self, col: usize) -> Column<'_, R, C, T> {
+    fn get_column(&self, col: usize) -> IntermittentSlice<'_, R, C, T> {
         assert!(
             col < C,
             "Column: {} out of bounds {}, be carefull columns are 0 indexed.",
             col,
             C
         );
-        Column {
+        IntermittentSlice {
             start: &self.inner[col],
         }
     }
 
-    fn get_mut_column(&mut self, col: usize) -> ColumnMut<'_, R, C, T> {
+    fn get_mut_column(&mut self, col: usize) -> IntermittentSliceMut<'_, R, C, T> {
         assert!(
             col < C,
             "Column: {} out of bounds {}, be carefull columns are 0 indexed.",
             col,
             C
         );
-        ColumnMut {
+        IntermittentSliceMut {
             start: &mut self.inner[col],
         }
     }
@@ -220,6 +247,31 @@ where
         &mut self.inner[start..start + C]
     }
 
+    fn rows(&self) -> IterSlices<'_, R, C, T> {
+        IterSlices {
+            matrix_buffer: self.inner,
+        }
+    }
+
+    fn rows_mut(&mut self) -> IterSlicesMut<'_, R, C, T> {
+        IterSlicesMut {
+            matrix_buffer: self.inner,
+        }
+    }
+
+    fn cols(&self) -> IterIntermittentSlices<'_, R, C, T> {
+        IterIntermittentSlices {
+            slice_index: 0,
+            matrix_buffer: self.inner,
+        }
+    }
+
+    fn cols_mut(&mut self) -> IterMutIntermittentSlices<'_, R, C, T> {
+        IterMutIntermittentSlices {
+            slice_index: 0,
+            matrix_buffer: self.inner,
+        }
+    }
     fn apply_all(&mut self, f: fn(&mut T)) {
         for el in self.inner.iter_mut() {
             f(el);
