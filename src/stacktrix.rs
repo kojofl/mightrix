@@ -20,6 +20,26 @@ impl<const S: usize, const R: usize, const C: usize, MemoryPriority, T>
 where
     T: Copy + Sized,
 {
+    /// Constructs a Stacktrix from an array with memory interpretation given by MemoryPriority.
+    ///
+    /// # Panics
+    ///
+    /// The function will panic if the given slice is not equal to the size of the to be created
+    /// matrix R * C or if S != R * C.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use mightrix::{ Stacktrix, ColumnPrio };
+    /// let reftrix = Stacktrix::<6, 3, 2, ColumnPrio, u8>::with_values([1,2,3,4,5,6]);
+    /// ```
+    pub const fn with_values(inner_values: [T; S]) -> Self {
+        assert!(S == R * C);
+        Self {
+            inner: inner_values,
+            _prio: PhantomData,
+        }
+    }
     /// Constructs a Stacktrix from a slice with a [`ColumnPrio`] memory interpretation.
     ///
     /// # Panics
