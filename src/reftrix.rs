@@ -37,6 +37,7 @@ impl<'a, const R: usize, const C: usize, MemoryPriority, T> Reftrix<'a, R, C, Me
         }
     }
 }
+
 impl<'a, 'r, const R: usize, const C: usize, T> ColumnPrioMatrix<'a, R, C, T>
     for Reftrix<'a, R, C, ColumnPrio, T>
 where

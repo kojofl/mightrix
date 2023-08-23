@@ -352,6 +352,23 @@ pub struct IntermittentSliceMut<'a, const A: usize, const S: usize, T> {
     start: &'a mut T,
 }
 
+impl<'a, const A: usize, const S: usize, T> IntermittentSliceMut<'a, A, S, T> {
+    /// swap allows for a memswap in non continuous memory this is not possible in safe rust since
+    /// you need to have two mutable references.
+    ///
+    /// SAFETY:
+    /// Since the index operation guarantees that a and b are in bounds and are therefore valid
+    /// the swap operation is safe.
+    pub fn swap(&mut self, a: usize, b: usize) {
+        unsafe {
+            std::mem::swap(
+                &mut *(&mut self[a] as *mut T),
+                &mut *(&mut self[b] as *mut T),
+            );
+        }
+    }
+}
+
 impl<'a, const A: usize, const S: usize, T> Index<usize> for IntermittentSliceMut<'a, A, S, T> {
     type Output = T;
 
