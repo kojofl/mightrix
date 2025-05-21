@@ -1,6 +1,6 @@
 use crate::{
     ColumnPrio, ColumnPrioMatrix, IntermittentSlice, IntermittentSliceMut, IterIntermittentSlices,
-    IterMutIntermittentSlices, IterSlices, IterSlicesMut, Position, RowPrio, RowPrioMatrix,
+    IterMutIntermittentSlices, IterSlices, IterSlicesMut, RowPrio, RowPrioMatrix,
 };
 use std::{fmt::Debug, marker::PhantomData, mem::MaybeUninit};
 
@@ -73,13 +73,13 @@ where
     }
 }
 
-impl<'a, const S: usize, const R: usize, const C: usize, T> ColumnPrioMatrix<'a, R, C, T>
+impl<'a, const S: usize, const R: usize, const C: usize, T> ColumnPrioMatrix<'a, T>
     for Stacktrix<S, R, C, ColumnPrio, T>
 where
     Self: 'a,
     T: Copy + Default + Debug,
 {
-    /// Inserts a value at position (x, y) inside the matrix.
+    /// Inserts a value at position row, col inside the matrix.
     ///
     /// # Panics
     ///
@@ -91,11 +91,11 @@ where
     /// # use mightrix::{ Stacktrix, ColumnPrio, ColumnPrioMatrix };
     /// let mut data = vec![1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4];
     /// let mut m = Stacktrix::<16, 4, 4, ColumnPrio, u8>::from_values(&mut data[..]);
-    /// m.insert((3, 0), 0);
-    /// assert_eq!(m.get((3,0)), &0);
+    /// m.insert(3, 0, 0);
+    /// assert_eq!(m.get(3,0), &0);
     /// ```
-    fn insert(&mut self, location: Position, value: T) {
-        self.get_mut_column(location.1)[location.0] = value;
+    fn insert(&mut self, row: usize, col: usize, value: T) {
+        self.get_mut_column(col)[row] = value;
     }
     /// Get a immutable reference to a value in the matrix at location (x, y)
     ///
@@ -109,10 +109,10 @@ where
     /// # use mightrix::{ Stacktrix, ColumnPrio, ColumnPrioMatrix };
     /// let mut data = vec![1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4];
     /// let mut m = Stacktrix::<16, 4, 4, ColumnPrio, u8>::from_values(&mut data[..]);
-    /// assert_eq!(m.get((0, 2)), &3);
+    /// assert_eq!(m.get(0, 2), &3);
     /// ```
-    fn get(&'a self, location: Position) -> &'a T {
-        &self.get_column(location.1)[location.0]
+    fn get(&'a self, row: usize, col: usize) -> &'a T {
+        &self.get_column(col)[row]
     }
 
     /// Get a mutable reference to a value in the matrix at location (x, y)
@@ -120,8 +120,8 @@ where
     /// # Panics
     ///
     /// If the location given is out of bounds in x or y the function panics.
-    fn get_mut(&'a mut self, location: Position) -> &'a mut T {
-        &mut self.get_mut_column(location.1)[location.0]
+    fn get_mut(&'a mut self, row: usize, col: usize) -> &'a mut T {
+        &mut self.get_mut_column(col)[row]
     }
 
     /// Fills an entire column with the given data.
@@ -142,9 +142,9 @@ where
     /// assert_eq!(m.get_column(1), &[7,7,7,7]);
     /// ```
     fn fill_col(&mut self, col: usize, data: &[T]) {
-        assert_eq!(data.len(), C);
-        let start = col * C;
-        self.inner[start..start + C].copy_from_slice(data);
+        assert_eq!(data.len(), R);
+        let start = col * R;
+        self.inner[start..start + R].copy_from_slice(data);
     }
 
     /// Fills an entire row with the given data.
@@ -162,13 +162,13 @@ where
     /// let mut data = vec![1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4];
     /// let mut m = Stacktrix::<16, 4, 4, ColumnPrio, u8>::from_values(&mut data[..]);
     /// m.fill_row(1, &[7,7,7,7]);
-    /// assert_eq!(m.get((1,0)), &7);
-    /// assert_eq!(m.get((1,1)), &7);
-    /// assert_eq!(m.get((1,2)), &7);
-    /// assert_eq!(m.get((1,3)), &7);
+    /// assert_eq!(m.get(1,0), &7);
+    /// assert_eq!(m.get(1,1), &7);
+    /// assert_eq!(m.get(1,2), &7);
+    /// assert_eq!(m.get(1,3), &7);
     /// ```
     fn fill_row(&mut self, row: usize, data: &[T]) {
-        assert_eq!(data.len(), R);
+        assert_eq!(data.len(), C);
         for (dst, src) in self.get_mut_row(row).into_iter().zip(data.iter()) {
             *dst = *src;
         }
@@ -195,8 +195,8 @@ where
             col,
             C
         );
-        let start = col * C;
-        &self.inner[start..start + C]
+        let start = col * R;
+        &self.inner[start..start + R]
     }
 
     /// Retrieves a mutable slice that represents the column.
@@ -220,7 +220,7 @@ where
     /// # Panics
     ///
     /// If the row is out of bounds.
-    fn get_row(&self, row: usize) -> IntermittentSlice<'_, R, C, T> {
+    fn get_row(&self, row: usize) -> IntermittentSlice<'_, T> {
         assert!(
             row < R,
             "Row: {} out of bounds {}, be carefull rows are 0 indexed.",
@@ -229,6 +229,8 @@ where
         );
         IntermittentSlice {
             start: &self.inner[row],
+            slices: R,
+            len: C,
         }
     }
 
@@ -237,7 +239,7 @@ where
     /// # Panics
     ///
     /// If the row is out of bounds.
-    fn get_mut_row(&mut self, row: usize) -> IntermittentSliceMut<'_, R, C, T> {
+    fn get_mut_row(&mut self, row: usize) -> IntermittentSliceMut<'_, T> {
         assert!(
             row < R,
             "Row: {} out of bounds {}, be carefull rows are 0 indexed.",
@@ -246,30 +248,38 @@ where
         );
         IntermittentSliceMut {
             start: &mut self.inner[row],
+            slices: R,
+            len: C,
         }
     }
 
-    fn rows(&self) -> IterIntermittentSlices<'_, R, C, T> {
+    fn rows(&self) -> IterIntermittentSlices<'_, T> {
         IterIntermittentSlices {
             slice_index: 0,
             matrix_buffer: &self.inner,
+            slices: R,
+            len: C,
         }
     }
-    fn rows_mut(&mut self) -> IterMutIntermittentSlices<'_, R, C, T> {
+    fn rows_mut(&mut self) -> IterMutIntermittentSlices<'_, T> {
         IterMutIntermittentSlices {
             slice_index: 0,
             matrix_buffer: &mut self.inner,
+            slices: R,
+            len: C,
         }
     }
-    fn cols(&self) -> IterSlices<'_, R, C, T> {
+    fn cols(&self) -> IterSlices<'_, T> {
         IterSlices {
             matrix_buffer: &self.inner[..],
+            len: R,
         }
     }
 
-    fn cols_mut(&mut self) -> IterSlicesMut<'_, R, C, T> {
+    fn cols_mut(&mut self) -> IterSlicesMut<'_, T> {
         IterSlicesMut {
             matrix_buffer: &mut self.inner[..],
+            len: R,
         }
     }
 
@@ -315,7 +325,7 @@ where
     }
 }
 
-impl<'a, const S: usize, const R: usize, const C: usize, T> RowPrioMatrix<'a, R, C, T>
+impl<'a, const S: usize, const R: usize, const C: usize, T> RowPrioMatrix<'a, T>
     for Stacktrix<S, R, C, RowPrio, T>
 where
     Self: 'a,
@@ -333,11 +343,11 @@ where
     /// # use mightrix::{ Stacktrix, RowPrio, RowPrioMatrix};
     /// let mut data = vec![1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4];
     /// let mut m = Stacktrix::<16, 4, 4, RowPrio, u8>::from_values(&mut data[..]);
-    /// m.insert((3, 1), 0);
-    /// assert_eq!(m.get((3,1)), &0);
+    /// m.insert(3, 1, 0);
+    /// assert_eq!(m.get(3,1), &0);
     /// ```
-    fn insert(&mut self, location: Position, value: T) {
-        self.get_mut_row(location.0)[location.1] = value;
+    fn insert(&mut self, row: usize, col: usize, value: T) {
+        self.get_mut_row(row)[col] = value;
     }
 
     /// Get a immutable reference to a value in the matrix at location (x, y)
@@ -352,10 +362,10 @@ where
     /// # use mightrix::{ Stacktrix, RowPrio, RowPrioMatrix};
     /// let mut data = vec![1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4];
     /// let mut m = Stacktrix::<16, 4, 4, RowPrio, u8>::from_values(&mut data[..]);
-    /// assert_eq!(m.get((0, 2)), &1);
+    /// assert_eq!(m.get(0, 2), &1);
     /// ```
-    fn get(&self, location: Position) -> &T {
-        &self.get_row(location.0)[location.1]
+    fn get(&'a self, row: usize, col: usize) -> &'a T {
+        &self.get_row(row)[col]
     }
 
     /// Get a mutable reference to a value in the matrix at location (x, y)
@@ -363,8 +373,8 @@ where
     /// # Panics
     ///
     /// If the location given is out of bounds in x or y the function panics.
-    fn get_mut(&mut self, location: Position) -> &mut T {
-        &mut self.get_mut_row(location.0)[location.1]
+    fn get_mut(&'a mut self, row: usize, col: usize) -> &'a mut T {
+        &mut self.get_mut_row(row)[col]
     }
 
     /// Fills an entire column with the given data.
@@ -382,10 +392,10 @@ where
     /// let mut data = vec![1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4];
     /// let mut m = Stacktrix::<16, 4, 4, RowPrio, u8>::from_values(&mut data[..]);
     /// m.fill_col(1, &[7,7,7,7]);
-    /// assert_eq!(m.get((0,1)), &7);
-    /// assert_eq!(m.get((1,1)), &7);
-    /// assert_eq!(m.get((2,1)), &7);
-    /// assert_eq!(m.get((3,1)), &7);
+    /// assert_eq!(m.get(0,1), &7);
+    /// assert_eq!(m.get(1,1), &7);
+    /// assert_eq!(m.get(2,1), &7);
+    /// assert_eq!(m.get(3,1), &7);
     /// ```
     fn fill_col(&'a mut self, col: usize, data: &[T]) {
         assert_eq!(data.len(), R);
@@ -422,7 +432,7 @@ where
     /// # Panics
     ///
     /// If the col is out of bounds.
-    fn get_column(&self, col: usize) -> IntermittentSlice<'_, R, C, T> {
+    fn get_column(&self, col: usize) -> IntermittentSlice<'_, T> {
         assert!(
             col < C,
             "Column: {} out of bounds {}, be carefull columns are 0 indexed.",
@@ -431,6 +441,8 @@ where
         );
         IntermittentSlice {
             start: &self.inner[col],
+            slices: C,
+            len: R,
         }
     }
 
@@ -439,7 +451,7 @@ where
     /// # Panics
     ///
     /// If the col is out of bounds.
-    fn get_mut_column(&mut self, col: usize) -> IntermittentSliceMut<'_, R, C, T> {
+    fn get_mut_column(&mut self, col: usize) -> IntermittentSliceMut<'_, T> {
         assert!(
             col < C,
             "Column: {} out of bounds {}, be carefull columns are 0 indexed.",
@@ -448,6 +460,8 @@ where
         );
         IntermittentSliceMut {
             start: &mut self.inner[col],
+            slices: C,
+            len: R,
         }
     }
 
@@ -492,27 +506,33 @@ where
         &mut self.inner[start..start + C]
     }
 
-    fn rows(&self) -> IterSlices<'_, R, C, T> {
+    fn rows(&self) -> IterSlices<'_, T> {
         IterSlices {
             matrix_buffer: &self.inner,
+            len: C,
         }
     }
-    fn rows_mut(&mut self) -> IterSlicesMut<'_, R, C, T> {
+    fn rows_mut(&mut self) -> IterSlicesMut<'_, T> {
         IterSlicesMut {
             matrix_buffer: &mut self.inner,
+            len: C,
         }
     }
-    fn cols(&self) -> IterIntermittentSlices<'_, R, C, T> {
+    fn cols(&self) -> IterIntermittentSlices<'_, T> {
         IterIntermittentSlices {
             slice_index: 0,
             matrix_buffer: &self.inner[..],
+            slices: C,
+            len: R,
         }
     }
 
-    fn cols_mut(&mut self) -> IterMutIntermittentSlices<'_, R, C, T> {
+    fn cols_mut(&mut self) -> IterMutIntermittentSlices<'_, T> {
         IterMutIntermittentSlices {
             slice_index: 0,
             matrix_buffer: &mut self.inner[..],
+            slices: C,
+            len: R,
         }
     }
 

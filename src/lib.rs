@@ -18,11 +18,11 @@
 use std::ops::{Index, IndexMut};
 
 #[doc(hidden)]
+pub mod matrix;
+#[doc(hidden)]
 pub mod reftrix;
 #[doc(hidden)]
 pub mod stacktrix;
-
-type Position = (usize, usize);
 
 /// Matrices ([`Reftrix`], [`Stacktrix`]) with Columnprio use a column first memory representation.
 ///
@@ -52,10 +52,11 @@ pub struct RowPrio;
 
 pub use reftrix::Reftrix;
 pub use stacktrix::Stacktrix;
+pub use matrix::Matrix;
 
 /// ColumnPrioMatrix encapsulates all functionality a matrix has that uses the memory
 /// interpretation ColumnPrio.
-pub trait ColumnPrioMatrix<'a, const R: usize, const C: usize, T> {
+pub trait ColumnPrioMatrix<'a, T> {
     /// Inserts a value at position (x, y) inside the matrix.
     ///
     /// # Panics
@@ -68,11 +69,11 @@ pub trait ColumnPrioMatrix<'a, const R: usize, const C: usize, T> {
     /// # use mightrix::{ Reftrix, ColumnPrio, ColumnPrioMatrix };
     /// let mut data = vec![1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4];
     /// let mut reftrix = Reftrix::<4, 4, ColumnPrio, u8>::from_values(&mut data[..]);
-    /// reftrix.insert((3, 0), 0);
-    /// assert_eq!(reftrix.get((3, 0)), &0);
+    /// reftrix.insert(3, 0, 0);
+    /// assert_eq!(reftrix.get(3, 0), &0);
     /// assert_eq!(data[3], 0);
     /// ```
-    fn insert(&mut self, location: (usize, usize), value: T);
+    fn insert(&mut self, row: usize, col: usize, value: T);
     /// Get a immutable reference to a value in the matrix at location (x, y)
     ///
     /// # Panics
@@ -85,15 +86,15 @@ pub trait ColumnPrioMatrix<'a, const R: usize, const C: usize, T> {
     /// # use mightrix::{ Reftrix, ColumnPrio, ColumnPrioMatrix };
     /// let mut data = vec![1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4];
     /// let mut reftrix = Reftrix::<4, 4, ColumnPrio, u8>::from_values(&mut data[..]);
-    /// assert_eq!(reftrix.get((0, 2)), &3);
+    /// assert_eq!(reftrix.get(0, 2), &3);
     /// ```
-    fn get(&'a self, location: (usize, usize)) -> &'a T;
+    fn get(&'a self, row: usize, col: usize) -> &'a T;
     /// Get a mutable reference to a value in the matrix at location (x, y)
     ///
     /// # Panics
     ///
     /// If the location given is out of bounds in x or y the function panics.
-    fn get_mut(&'a mut self, location: (usize, usize)) -> &'a mut T;
+    fn get_mut(&'a mut self, row: usize, col: usize) -> &'a mut T;
     /// Fills an entire column with the given data.
     ///
     /// # Panics
@@ -127,10 +128,10 @@ pub trait ColumnPrioMatrix<'a, const R: usize, const C: usize, T> {
     /// let mut data = vec![1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4];
     /// let mut reftrix = Reftrix::<4, 4, ColumnPrio, u8>::from_values(&mut data[..]);
     /// reftrix.fill_row(1, &[7,7,7,7]);
-    /// assert_eq!(reftrix.get((1,0)), &7);
-    /// assert_eq!(reftrix.get((1,1)), &7);
-    /// assert_eq!(reftrix.get((1,2)), &7);
-    /// assert_eq!(reftrix.get((1,3)), &7);
+    /// assert_eq!(reftrix.get(1,0), &7);
+    /// assert_eq!(reftrix.get(1,1), &7);
+    /// assert_eq!(reftrix.get(1,2), &7);
+    /// assert_eq!(reftrix.get(1,3), &7);
     /// assert_eq!(data[1], 7);
     /// assert_eq!(data[5], 7);
     /// assert_eq!(data[9], 7);
@@ -163,21 +164,21 @@ pub trait ColumnPrioMatrix<'a, const R: usize, const C: usize, T> {
     /// # Panics
     ///
     /// If the row is out of bounds.
-    fn get_row(&self, row: usize) -> IntermittentSlice<'_, R, C, T>;
+    fn get_row(&self, row: usize) -> IntermittentSlice<'_, T>;
     /// Retrieves a [`IntermittentSliceMut`].
     ///
     /// # Panics
     ///
     /// If the row is out of bounds.
-    fn get_mut_row(&mut self, row: usize) -> IntermittentSliceMut<'_, R, C, T>;
+    fn get_mut_row(&mut self, row: usize) -> IntermittentSliceMut<'_, T>;
     /// Returns an iterator over all rows [`IntermittentSlice`] inside the matrix.
-    fn rows(&self) -> IterIntermittentSlices<'_, R, C, T>;
+    fn rows(&self) -> IterIntermittentSlices<'_, T>;
     /// Returns an iterator over all rows in a mutable manner [`IntermittentSliceMut`] inside the matrix.
-    fn rows_mut(&mut self) -> IterMutIntermittentSlices<'_, R, C, T>;
+    fn rows_mut(&mut self) -> IterMutIntermittentSlices<'_, T>;
     /// Returns an iterator over all collumns (slices) inside the matrix.
-    fn cols(&self) -> IterSlices<'_, R, C, T>;
+    fn cols(&self) -> IterSlices<'_, T>;
     /// Returns an iterator over all collumns in a mutable manner (mutable slices) inside the matrix.
-    fn cols_mut(&mut self) -> IterSlicesMut<'_, R, C, T>;
+    fn cols_mut(&mut self) -> IterSlicesMut<'_, T>;
     /// Applies a function on all elements of the matrix.
     ///
     /// # Examples
@@ -196,7 +197,7 @@ pub trait ColumnPrioMatrix<'a, const R: usize, const C: usize, T> {
 
 /// RowPrioMatrix encapsulates all functionality a matrix has that uses the memory
 /// interpretation RowPrio.
-pub trait RowPrioMatrix<'a, const R: usize, const C: usize, T> {
+pub trait RowPrioMatrix<'a, T> {
     ///
     /// Inserts a value at position (x, y) inside the matrix.
     /// # Panics
@@ -209,10 +210,10 @@ pub trait RowPrioMatrix<'a, const R: usize, const C: usize, T> {
     /// # use mightrix::{ Reftrix, RowPrio, RowPrioMatrix};
     /// let mut data = vec![1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4];
     /// let mut reftrix = Reftrix::<4, 4, RowPrio, u8>::from_values(&mut data[..]);
-    /// reftrix.insert((3, 1), 0);
+    /// reftrix.insert(3, 1, 0);
     /// assert_eq!(data[13], 0);
     /// ```
-    fn insert(&mut self, location: (usize, usize), value: T);
+    fn insert(&mut self, row: usize, col: usize, value: T);
     /// Get a immutable reference to a value in the matrix at location (x, y)
     ///
     /// # Panics
@@ -225,15 +226,15 @@ pub trait RowPrioMatrix<'a, const R: usize, const C: usize, T> {
     /// # use mightrix::{ Reftrix, RowPrio, RowPrioMatrix};
     /// let mut data = vec![1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4];
     /// let mut reftrix = Reftrix::<4, 4, RowPrio, u8>::from_values(&mut data[..]);
-    /// assert_eq!(reftrix.get((0, 2)), &1);
+    /// assert_eq!(reftrix.get(0, 2), &1);
     /// ```
-    fn get(&self, location: (usize, usize)) -> &T;
+    fn get(&'a self, row: usize, col: usize) -> &T;
     /// Get a mutable reference to a value in the matrix at location (x, y)
     ///
     /// # Panics
     ///
     /// If the location given is out of bounds in x or y the function panics.
-    fn get_mut(&mut self, location: (usize, usize)) -> &mut T;
+    fn get_mut(&'a mut self, row: usize, col: usize) -> &mut T;
     /// Fills an entire row with the given data.
     ///
     /// # Panics
@@ -278,13 +279,13 @@ pub trait RowPrioMatrix<'a, const R: usize, const C: usize, T> {
     /// # Panics
     ///
     /// If the Columns is out of bounds.
-    fn get_column(&self, col: usize) -> IntermittentSlice<'_, R, C, T>;
+    fn get_column(&self, col: usize) -> IntermittentSlice<'_, T>;
     /// Retrieves a [`IntermittentSliceMut`].
     ///
     /// # Panics
     ///
     /// If the Columns is out of bounds.
-    fn get_mut_column(&mut self, col: usize) -> IntermittentSliceMut<'_, R, C, T>;
+    fn get_mut_column(&mut self, col: usize) -> IntermittentSliceMut<'_, T>;
     /// Retrieves a immutable slice that represents the row.
     ///
     /// # Panics
@@ -298,13 +299,13 @@ pub trait RowPrioMatrix<'a, const R: usize, const C: usize, T> {
     /// If the row is out of bounds.
     fn get_mut_row(&mut self, row: usize) -> &mut [T];
     /// Returns an iterator over all rows [`IntermittentSlice`] inside the matrix.
-    fn rows(&self) -> IterSlices<'_, R, C, T>;
+    fn rows(&self) -> IterSlices<'_, T>;
     /// Returns an iterator over all rows in a mutable manner [`IntermittentSliceMut`] inside the matrix.
-    fn rows_mut(&mut self) -> IterSlicesMut<'_, R, C, T>;
+    fn rows_mut(&mut self) -> IterSlicesMut<'_, T>;
     /// Returns an iterator over all collumns (slices) inside the matrix.
-    fn cols(&self) -> IterIntermittentSlices<'_, R, C, T>;
+    fn cols(&self) -> IterIntermittentSlices<'_, T>;
     /// Returns an iterator over all collumns in a mutable manner (mutable slices) inside the matrix.
-    fn cols_mut(&mut self) -> IterMutIntermittentSlices<'_, R, C, T>;
+    fn cols_mut(&mut self) -> IterMutIntermittentSlices<'_, T>;
     /// Applies a function on all elements of the matrix.
     ///
     /// # Examples
@@ -327,18 +328,20 @@ pub trait RowPrioMatrix<'a, const R: usize, const C: usize, T> {
 /// struct. It can however be indexed and iterated over.
 /// Const A represents the amount of slices in the Matrix, const S represents the length of each
 /// slice.
-pub struct IntermittentSlice<'a, const A: usize, const S: usize, T> {
+pub struct IntermittentSlice<'a, T> {
     start: &'a T,
+    slices: usize,
+    len: usize,
 }
 
-impl<'a, const A: usize, const S: usize, T> Index<usize> for IntermittentSlice<'a, A, S, T> {
+impl<'a, T> Index<usize> for IntermittentSlice<'a, T> {
     type Output = T;
 
     fn index(&self, index: usize) -> &Self::Output {
-        if index >= S {
-            panic!("Index {index} out of bounds {}", S);
+        if index >= self.len {
+            panic!("Index {index} out of bounds {}", self.len);
         }
-        unsafe { &*((self.start as *const T).add(index * A)) }
+        unsafe { &*((self.start as *const T).add(index * self.slices)) }
     }
 }
 
@@ -348,11 +351,13 @@ impl<'a, const A: usize, const S: usize, T> Index<usize> for IntermittentSlice<'
 /// struct. It can however be indexed and iterated over.
 /// Const A represents the amount of slices in the Matrix, const S represents the length of each
 /// slice.
-pub struct IntermittentSliceMut<'a, const A: usize, const S: usize, T> {
+pub struct IntermittentSliceMut<'a, T> {
     start: &'a mut T,
+    slices: usize,
+    len: usize,
 }
 
-impl<'a, const A: usize, const S: usize, T> IntermittentSliceMut<'a, A, S, T> {
+impl<'a, T> IntermittentSliceMut<'a, T> {
     /// swap allows for a memswap in non continuous memory this is not possible in safe rust since
     /// you need to have two mutable references.
     ///
@@ -369,36 +374,36 @@ impl<'a, const A: usize, const S: usize, T> IntermittentSliceMut<'a, A, S, T> {
     }
 }
 
-impl<'a, const A: usize, const S: usize, T> Index<usize> for IntermittentSliceMut<'a, A, S, T> {
+impl<'a, T> Index<usize> for IntermittentSliceMut<'a, T> {
     type Output = T;
 
     fn index(&self, index: usize) -> &Self::Output {
-        if index >= S {
-            panic!("Index {index} out of bounds {}", S);
+        if index >= self.len {
+            panic!("Index {index} out of bounds {}", self.len);
         }
-        unsafe { &*((self.start as *const T).add(index * A)) }
+        unsafe { &*((self.start as *const T).add(index * self.slices)) }
     }
 }
 
-impl<'a, const A: usize, const S: usize, T> IndexMut<usize> for IntermittentSliceMut<'a, A, S, T> {
+impl<'a, T> IndexMut<usize> for IntermittentSliceMut<'a, T> {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
-        if index >= S {
-            panic!("Index {index} out of bounds {}", S);
+        if index >= self.len {
+            panic!("Index {index} out of bounds {}", self.len);
         }
-        unsafe { &mut *((self.start as *mut T).add(index * A)) }
+        unsafe { &mut *((self.start as *mut T).add(index * self.slices)) }
     }
 }
 
 #[doc(hidden)]
-pub struct IntermittentSliceMutIntoItterator<'a, const R: usize, const S: usize, T> {
-    row: IntermittentSliceMut<'a, R, S, T>,
+pub struct IntermittentSliceMutIntoItterator<'a, T> {
+    row: IntermittentSliceMut<'a, T>,
     index: usize,
 }
 
-impl<'a, const A: usize, const S: usize, T> IntoIterator for IntermittentSliceMut<'a, A, S, T> {
+impl<'a, T> IntoIterator for IntermittentSliceMut<'a, T> {
     type Item = &'a mut T;
 
-    type IntoIter = IntermittentSliceMutIntoItterator<'a, A, S, T>;
+    type IntoIter = IntermittentSliceMutIntoItterator<'a, T>;
 
     fn into_iter(self) -> Self::IntoIter {
         IntermittentSliceMutIntoItterator {
@@ -408,17 +413,15 @@ impl<'a, const A: usize, const S: usize, T> IntoIterator for IntermittentSliceMu
     }
 }
 
-impl<'a, const A: usize, const S: usize, T> Iterator
-    for IntermittentSliceMutIntoItterator<'a, A, S, T>
-{
+impl<'a, T> Iterator for IntermittentSliceMutIntoItterator<'a, T> {
     type Item = &'a mut T;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.index >= S {
+        if self.index >= self.row.len {
             return None;
         }
         unsafe {
-            let next = &mut *((self.row.start as *mut T).add(self.index * A));
+            let next = &mut *((self.row.start as *mut T).add(self.index * self.row.slices));
             self.index += 1;
             Some(next)
         }
@@ -426,15 +429,15 @@ impl<'a, const A: usize, const S: usize, T> Iterator
 }
 
 #[doc(hidden)]
-pub struct IntermittentSliceIntoItterator<'a, const A: usize, const S: usize, T> {
-    row: IntermittentSlice<'a, A, S, T>,
+pub struct IntermittentSliceIntoItterator<'a, T> {
+    row: IntermittentSlice<'a, T>,
     index: usize,
 }
 
-impl<'a, const A: usize, const S: usize, T> IntoIterator for IntermittentSlice<'a, A, S, T> {
+impl<'a, T> IntoIterator for IntermittentSlice<'a, T> {
     type Item = &'a T;
 
-    type IntoIter = IntermittentSliceIntoItterator<'a, A, S, T>;
+    type IntoIter = IntermittentSliceIntoItterator<'a, T>;
 
     fn into_iter(self) -> Self::IntoIter {
         IntermittentSliceIntoItterator {
@@ -444,17 +447,15 @@ impl<'a, const A: usize, const S: usize, T> IntoIterator for IntermittentSlice<'
     }
 }
 
-impl<'a, const A: usize, const S: usize, T> Iterator
-    for IntermittentSliceIntoItterator<'a, A, S, T>
-{
+impl<'a, T> Iterator for IntermittentSliceIntoItterator<'a, T> {
     type Item = &'a T;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.index >= S {
+        if self.index >= self.row.len {
             return None;
         }
         unsafe {
-            let next = &*((self.row.start as *const T).add(self.index * A));
+            let next = &*((self.row.start as *const T).add(self.index * self.row.slices));
             self.index += 1;
             Some(next)
         }
@@ -463,20 +464,24 @@ impl<'a, const A: usize, const S: usize, T> Iterator
 
 /// IterIntermittentSlice represents an iterator over all rows / cols in a [`ColumnPrio`] / [`RowPrio`]
 /// Matrix.
-pub struct IterIntermittentSlices<'a, const R: usize, const S: usize, T> {
+pub struct IterIntermittentSlices<'a, T> {
     slice_index: usize,
     matrix_buffer: &'a [T],
+    slices: usize,
+    len: usize,
 }
 
-impl<'a, const A: usize, const S: usize, T> Iterator for IterIntermittentSlices<'a, A, S, T> {
-    type Item = IntermittentSlice<'a, A, S, T>;
+impl<'a, T> Iterator for IterIntermittentSlices<'a, T> {
+    type Item = IntermittentSlice<'a, T>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.slice_index >= A {
+        if self.slice_index >= self.slices {
             return None;
         };
         let r = IntermittentSlice {
             start: &self.matrix_buffer[self.slice_index],
+            slices: self.slices,
+            len: self.len,
         };
         self.slice_index += 1;
         Some(r)
@@ -485,25 +490,29 @@ impl<'a, const A: usize, const S: usize, T> Iterator for IterIntermittentSlices<
 
 /// IterIntermittentSliceMut represents an mutable iterator over all rows / cols in a [`ColumnPrio`] / [`RowPrio`]
 /// Matrix.
-pub struct IterMutIntermittentSlices<'a, const A: usize, const S: usize, T> {
+pub struct IterMutIntermittentSlices<'a, T> {
     slice_index: usize,
     matrix_buffer: &'a mut [T],
+    slices: usize,
+    len: usize,
 }
 
-impl<'a, const A: usize, const S: usize, T> Iterator for IterMutIntermittentSlices<'a, A, S, T>
+impl<'a, T> Iterator for IterMutIntermittentSlices<'a, T>
 where
     Self: 'a,
 {
-    type Item = IntermittentSliceMut<'a, A, S, T>;
+    type Item = IntermittentSliceMut<'a, T>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.slice_index >= A {
+        if self.slice_index >= self.slices {
             return None;
         };
         // SAFETY:
         // The IntermittentSliceMut point to the same array in memory but never touch the same elements.
         let row = IntermittentSliceMut {
             start: unsafe { std::mem::transmute(&mut self.matrix_buffer[self.slice_index]) },
+            slices: self.slices,
+            len: self.len,
         };
         self.slice_index += 1;
         Some(row)
@@ -511,29 +520,31 @@ where
 }
 
 /// IterRows represents an iterator over all rows of a Matrix.
-pub struct IterSlices<'a, const R: usize, const S: usize, T> {
+pub struct IterSlices<'a, T> {
     matrix_buffer: &'a [T],
+    len: usize,
 }
 
-impl<'a, const R: usize, const S: usize, T> Iterator for IterSlices<'a, R, S, T> {
+impl<'a, T> Iterator for IterSlices<'a, T> {
     type Item = &'a [T];
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.matrix_buffer.is_empty() {
             return None;
         };
-        let (r, rest) = self.matrix_buffer.split_at(S);
+        let (r, rest) = self.matrix_buffer.split_at(self.len);
         self.matrix_buffer = rest;
         Some(r)
     }
 }
 
 /// IterRows represents an iterator over all rows of a Matrix.
-pub struct IterSlicesMut<'a, const R: usize, const S: usize, T> {
+pub struct IterSlicesMut<'a, T> {
     matrix_buffer: &'a mut [T],
+    len: usize,
 }
 
-impl<'a, const R: usize, const S: usize, T> Iterator for IterSlicesMut<'a, R, S, T> {
+impl<'a, T> Iterator for IterSlicesMut<'a, T> {
     type Item = &'a mut [T];
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -545,9 +556,9 @@ impl<'a, const R: usize, const S: usize, T> Iterator for IterSlicesMut<'a, R, S,
             // I think this should be okay since the lifetime is tied to the original
             // matrix_buffer.
             let (r, rest): (&mut [T], &mut [T]) =
-                std::mem::transmute(self.matrix_buffer.split_at_mut(S));
+                std::mem::transmute(self.matrix_buffer.split_at_mut(self.len));
             self.matrix_buffer = rest;
-            Some(std::mem::transmute(r))
+            Some(r)
         }
     }
 }
