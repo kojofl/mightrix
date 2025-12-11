@@ -38,6 +38,7 @@ pub mod stacktrix;
 /// |Row1      | 1       | 2       | 3       | 4       |
 /// |Row2      | 1       | 2       | 3       | 4       |
 /// |Row3      | 1       | 2       | 3       | 4       |
+#[derive(Debug, Clone, Copy)]
 pub struct ColumnPrio;
 
 /// Matrices ([`Reftrix`], [`Stacktrix`]) with RowPrio use a row first memory representation.
@@ -51,6 +52,7 @@ pub struct ColumnPrio;
 /// |Row1      | 2       | 2       | 2       | 2       |
 /// |Row2      | 3       | 3       | 3       | 3       |
 /// |Row3      | 4       | 4       | 4       | 4       |
+#[derive(Debug, Clone, Copy)]
 pub struct RowPrio;
 
 pub use matrix::Matrix;
