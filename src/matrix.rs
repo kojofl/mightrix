@@ -54,11 +54,11 @@ impl<MemoryPriority, T: Clone> Matrix<MemoryPriority, T> {
         })
     }
 
-    pub fn rows(&self) -> usize {
+    pub fn row_count(&self) -> usize {
         self.rows
     }
 
-    pub fn cols(&self) -> usize {
+    pub fn collumn_count(&self) -> usize {
         self.cols
     }
 }
@@ -239,8 +239,8 @@ where
         );
         IntermittentSlice {
             start: &self.inner[col],
-            slices: self.rows,
-            len: self.cols,
+            slices: self.cols,
+            len: self.rows,
         }
     }
 
