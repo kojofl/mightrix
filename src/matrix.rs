@@ -53,6 +53,14 @@ impl<MemoryPriority, T: Clone> Matrix<MemoryPriority, T> {
             _prio: PhantomData,
         })
     }
+
+    pub fn rows(&self) -> usize {
+        self.rows
+    }
+
+    pub fn cols(&self) -> usize {
+        self.cols
+    }
 }
 
 impl<T> ColumnPrioMatrix<T> for Matrix<ColumnPrio, T>
