@@ -10,6 +10,7 @@ use std::{fmt::Debug, marker::PhantomData, mem::MaybeUninit};
 /// of columns by C, S indicates the entire size this is necessary since const expressions are
 /// still nightly only. MemoryPriority indicates how the underlying memory is interpreted. (see
 /// [`ColumnPrio`], [`RowPrio`])
+#[derive(Debug, Clone, Copy)]
 pub struct Stacktrix<const S: usize, const R: usize, const C: usize, MemoryPrio, T> {
     inner: [T; S],
     _prio: PhantomData<MemoryPrio>,

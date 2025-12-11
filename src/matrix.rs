@@ -12,6 +12,7 @@ use std::{
 ///
 /// A Matrix operates on a Vec. MemoryPriority indicates how the underlying memory is interpreted. (see
 /// [`ColumnPrio`], [`RowPrio`])
+#[derive(Debug, Clone)]
 pub struct Matrix<MemoryPriority, T> {
     inner: Vec<T>,
     rows: usize,
