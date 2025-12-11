@@ -54,34 +54,32 @@ impl<MemoryPriority, T: Clone> Matrix<MemoryPriority, T> {
     }
 }
 
-impl<'a, 'r, T> ColumnPrioMatrix<'a, T> for Matrix<ColumnPrio, T>
+impl<T> ColumnPrioMatrix<T> for Matrix<ColumnPrio, T>
 where
-    Self: 'a,
-    'a: 'r,
-    T: Clone + Copy + Default + Debug,
+    T: Clone + Default + Debug,
 {
     fn insert(&mut self, row: usize, col: usize, value: T) {
         self.get_mut_column(col)[row] = value;
     }
 
-    fn get(&'a self, row: usize, col: usize) -> &'a T {
+    fn get(&self, row: usize, col: usize) -> &T {
         &self.get_column(col)[row]
     }
 
-    fn get_mut(&'a mut self, row: usize, col: usize) -> &'a mut T {
+    fn get_mut(&mut self, row: usize, col: usize) -> &mut T {
         &mut self.get_mut_column(col)[row]
     }
 
     fn fill_col(&mut self, col: usize, data: &[T]) {
         assert_eq!(data.len(), self.rows);
         let start = col * self.rows;
-        self.inner[start..start + self.rows].copy_from_slice(data);
+        self.inner[start..start + self.rows].clone_from_slice(data);
     }
 
     fn fill_row(&mut self, row: usize, data: &[T]) {
         assert_eq!(data.len(), self.cols);
         for (dst, src) in self.get_mut_row(row).into_iter().zip(data.iter()) {
-            *dst = *src;
+            *dst = src.clone();
         }
     }
 
@@ -194,33 +192,32 @@ where
     }
 }
 
-impl<'a, T> RowPrioMatrix<'a, T> for Matrix<RowPrio, T>
+impl<T> RowPrioMatrix<T> for Matrix<RowPrio, T>
 where
-    Self: 'a,
-    T: Copy + Default + Debug,
+    T: Clone + Default + Debug,
 {
     fn insert(&mut self, row: usize, col: usize, value: T) {
         self.get_mut_row(row)[col] = value;
     }
 
-    fn get(&'a self, row: usize, col: usize) -> &'a T {
+    fn get(&self, row: usize, col: usize) -> &T {
         &self.get_row(row)[col]
     }
 
-    fn get_mut(&'a mut self, row: usize, col: usize) -> &'a mut T {
+    fn get_mut(&mut self, row: usize, col: usize) -> &mut T {
         &mut self.get_mut_row(row)[col]
     }
 
     fn fill_row(&mut self, row: usize, data: &[T]) {
         assert_eq!(data.len(), self.cols);
         let start = row * self.cols;
-        self.inner[start..start + self.cols].copy_from_slice(data);
+        self.inner[start..start + self.cols].clone_from_slice(data);
     }
 
-    fn fill_col(&'a mut self, col: usize, data: &[T]) {
+    fn fill_col(&mut self, col: usize, data: &[T]) {
         assert_eq!(data.len(), self.rows);
         for (dst, src) in self.get_mut_column(col).into_iter().zip(data.iter()) {
-            *dst = *src;
+            *dst = src.clone();
         }
     }
 

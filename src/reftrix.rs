@@ -38,22 +38,19 @@ impl<'a, const R: usize, const C: usize, MemoryPriority, T> Reftrix<'a, R, C, Me
     }
 }
 
-impl<'a, 'r, const R: usize, const C: usize, T> ColumnPrioMatrix<'a, T>
-    for Reftrix<'a, R, C, ColumnPrio, T>
+impl<const R: usize, const C: usize, T> ColumnPrioMatrix<T> for Reftrix<'_, R, C, ColumnPrio, T>
 where
-    Self: 'a,
-    'a: 'r,
     T: Copy + Default + Debug,
 {
     fn insert(&mut self, row: usize, col: usize, value: T) {
         self.get_mut_column(col)[row] = value;
     }
 
-    fn get(&'a self, row: usize, col: usize) -> &'a T {
+    fn get(&self, row: usize, col: usize) -> &T {
         &self.get_column(col)[row]
     }
 
-    fn get_mut(&'a mut self, row: usize, col: usize) -> &'a mut T {
+    fn get_mut(&mut self, row: usize, col: usize) -> &mut T {
         &mut self.get_mut_column(col)[row]
     }
 
@@ -179,20 +176,19 @@ where
     }
 }
 
-impl<'a, const R: usize, const C: usize, T> RowPrioMatrix<'a, T> for Reftrix<'a, R, C, RowPrio, T>
+impl<const R: usize, const C: usize, T> RowPrioMatrix<T> for Reftrix<'_, R, C, RowPrio, T>
 where
-    Self: 'a,
     T: Copy + Default + Debug,
 {
     fn insert(&mut self, row: usize, col: usize, value: T) {
         self.get_mut_row(row)[col] = value;
     }
 
-    fn get(&'a self, row: usize, col: usize) -> &'a T {
+    fn get(&self, row: usize, col: usize) -> &T {
         &self.get_row(row)[col]
     }
 
-    fn get_mut(&'a mut self, row: usize, col: usize) -> &'a mut T {
+    fn get_mut(&mut self, row: usize, col: usize) -> &mut T {
         &mut self.get_mut_row(row)[col]
     }
 
@@ -202,7 +198,7 @@ where
         self.inner[start..start + C].copy_from_slice(data);
     }
 
-    fn fill_col(&'a mut self, col: usize, data: &[T]) {
+    fn fill_col(&mut self, col: usize, data: &[T]) {
         assert_eq!(data.len(), R);
         for (dst, src) in self.get_mut_column(col).into_iter().zip(data.iter()) {
             *dst = *src;

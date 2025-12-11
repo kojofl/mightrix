@@ -73,10 +73,9 @@ where
     }
 }
 
-impl<'a, const S: usize, const R: usize, const C: usize, T> ColumnPrioMatrix<'a, T>
+impl<const S: usize, const R: usize, const C: usize, T> ColumnPrioMatrix<T>
     for Stacktrix<S, R, C, ColumnPrio, T>
 where
-    Self: 'a,
     T: Copy + Default + Debug,
 {
     /// Inserts a value at position row, col inside the matrix.
@@ -111,7 +110,7 @@ where
     /// let mut m = Stacktrix::<16, 4, 4, ColumnPrio, u8>::from_values(&mut data[..]);
     /// assert_eq!(m.get(0, 2), &3);
     /// ```
-    fn get(&'a self, row: usize, col: usize) -> &'a T {
+    fn get(&self, row: usize, col: usize) -> &T {
         &self.get_column(col)[row]
     }
 
@@ -120,7 +119,7 @@ where
     /// # Panics
     ///
     /// If the location given is out of bounds in x or y the function panics.
-    fn get_mut(&'a mut self, row: usize, col: usize) -> &'a mut T {
+    fn get_mut(&mut self, row: usize, col: usize) -> &mut T {
         &mut self.get_mut_column(col)[row]
     }
 
@@ -325,10 +324,9 @@ where
     }
 }
 
-impl<'a, const S: usize, const R: usize, const C: usize, T> RowPrioMatrix<'a, T>
+impl<const S: usize, const R: usize, const C: usize, T> RowPrioMatrix<T>
     for Stacktrix<S, R, C, RowPrio, T>
 where
-    Self: 'a,
     T: Copy + Default + Debug,
 {
     /// Inserts a value at position (x, y) inside the matrix.
@@ -364,7 +362,7 @@ where
     /// let mut m = Stacktrix::<16, 4, 4, RowPrio, u8>::from_values(&mut data[..]);
     /// assert_eq!(m.get(0, 2), &1);
     /// ```
-    fn get(&'a self, row: usize, col: usize) -> &'a T {
+    fn get(&self, row: usize, col: usize) -> &T {
         &self.get_row(row)[col]
     }
 
@@ -373,7 +371,7 @@ where
     /// # Panics
     ///
     /// If the location given is out of bounds in x or y the function panics.
-    fn get_mut(&'a mut self, row: usize, col: usize) -> &'a mut T {
+    fn get_mut(&mut self, row: usize, col: usize) -> &mut T {
         &mut self.get_mut_row(row)[col]
     }
 
@@ -397,7 +395,7 @@ where
     /// assert_eq!(m.get(2,1), &7);
     /// assert_eq!(m.get(3,1), &7);
     /// ```
-    fn fill_col(&'a mut self, col: usize, data: &[T]) {
+    fn fill_col(&mut self, col: usize, data: &[T]) {
         assert_eq!(data.len(), R);
         for (dst, src) in self.get_mut_column(col).into_iter().zip(data.iter()) {
             *dst = *src;

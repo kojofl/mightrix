@@ -1,9 +1,10 @@
 # mightrix
 
 The mightrix crate exposes matrix types that let continuous memory be used as
-if it were a matrix. The dimensions of the matrix is asserted through const
-generics. This way the owned variant of the matrix `Stacktrix` can use
-a fixed size array on the stack.
+if it were a matrix. The dimensions of the matrix, if not heap allocated, 
+asserted through const generics. This way the owned variant of the matrix `Stacktrix` can use
+a fixed size array on the stack. For the heap allocated `Matrix` the dimensions are provided
+in the constructor.
 
 # Example
 

@@ -7,7 +7,7 @@
 //! the state is represented as a column first [`ColumnPrio`] matrix, and all operations
 //! are done on that Matrix.
 //!
-//! Currently there are two matrix types:
+//! Currently there are three matrix types:
 //!
 //! * [`Reftrix`]:
 //! This matrix uses a mutable slice and therefore manipulates the data directly.
@@ -15,6 +15,9 @@
 //! * [`Stacktrix`]:
 //! This matrix copies the data and uses a fixed size array on the stack, this way the original
 //! data is not manipulated.
+//!
+//! * [`Matrix`]:
+//! This matrix is heap allocated and can therefor have dynamic dimensions.
 use std::ops::{Index, IndexMut};
 
 #[doc(hidden)]
@@ -50,13 +53,13 @@ pub struct ColumnPrio;
 /// |Row3      | 4       | 4       | 4       | 4       |
 pub struct RowPrio;
 
+pub use matrix::Matrix;
 pub use reftrix::Reftrix;
 pub use stacktrix::Stacktrix;
-pub use matrix::Matrix;
 
 /// ColumnPrioMatrix encapsulates all functionality a matrix has that uses the memory
 /// interpretation ColumnPrio.
-pub trait ColumnPrioMatrix<'a, T> {
+pub trait ColumnPrioMatrix<T> {
     /// Inserts a value at position (x, y) inside the matrix.
     ///
     /// # Panics
@@ -88,13 +91,13 @@ pub trait ColumnPrioMatrix<'a, T> {
     /// let mut reftrix = Reftrix::<4, 4, ColumnPrio, u8>::from_values(&mut data[..]);
     /// assert_eq!(reftrix.get(0, 2), &3);
     /// ```
-    fn get(&'a self, row: usize, col: usize) -> &'a T;
+    fn get(&self, row: usize, col: usize) -> &T;
     /// Get a mutable reference to a value in the matrix at location (x, y)
     ///
     /// # Panics
     ///
     /// If the location given is out of bounds in x or y the function panics.
-    fn get_mut(&'a mut self, row: usize, col: usize) -> &'a mut T;
+    fn get_mut(&mut self, row: usize, col: usize) -> &mut T;
     /// Fills an entire column with the given data.
     ///
     /// # Panics
@@ -197,7 +200,7 @@ pub trait ColumnPrioMatrix<'a, T> {
 
 /// RowPrioMatrix encapsulates all functionality a matrix has that uses the memory
 /// interpretation RowPrio.
-pub trait RowPrioMatrix<'a, T> {
+pub trait RowPrioMatrix<T> {
     ///
     /// Inserts a value at position (x, y) inside the matrix.
     /// # Panics
@@ -228,13 +231,13 @@ pub trait RowPrioMatrix<'a, T> {
     /// let mut reftrix = Reftrix::<4, 4, RowPrio, u8>::from_values(&mut data[..]);
     /// assert_eq!(reftrix.get(0, 2), &1);
     /// ```
-    fn get(&'a self, row: usize, col: usize) -> &T;
+    fn get(&self, row: usize, col: usize) -> &T;
     /// Get a mutable reference to a value in the matrix at location (x, y)
     ///
     /// # Panics
     ///
     /// If the location given is out of bounds in x or y the function panics.
-    fn get_mut(&'a mut self, row: usize, col: usize) -> &mut T;
+    fn get_mut(&mut self, row: usize, col: usize) -> &mut T;
     /// Fills an entire row with the given data.
     ///
     /// # Panics
@@ -273,7 +276,7 @@ pub trait RowPrioMatrix<'a, T> {
     /// assert_eq!(data[9], 7);
     /// assert_eq!(data[13], 7);
     /// ```
-    fn fill_col(&'a mut self, col: usize, data: &[T]);
+    fn fill_col(&mut self, col: usize, data: &[T]);
     /// Retrieves a [`IntermittentSlice`].
     ///
     /// # Panics
@@ -326,8 +329,6 @@ pub trait RowPrioMatrix<'a, T> {
 ///
 /// Since the underlying data is not continuous all slice operations are unavailable to the IntermittentSlice
 /// struct. It can however be indexed and iterated over.
-/// Const A represents the amount of slices in the Matrix, const S represents the length of each
-/// slice.
 pub struct IntermittentSlice<'a, T> {
     start: &'a T,
     slices: usize,
@@ -349,8 +350,6 @@ impl<'a, T> Index<usize> for IntermittentSlice<'a, T> {
 ///
 /// Since the underlying data is not continuous all slice operations are unavailable to the IntermittentSliceMut
 /// struct. It can however be indexed and iterated over.
-/// Const A represents the amount of slices in the Matrix, const S represents the length of each
-/// slice.
 pub struct IntermittentSliceMut<'a, T> {
     start: &'a mut T,
     slices: usize,
